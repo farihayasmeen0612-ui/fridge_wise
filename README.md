@@ -8,6 +8,7 @@ A distributed IoT and cross-platform Flutter application engineered to eliminate
 
 For the full end-to-end engineering breakdown, architecture diagrams, and phase-by-phase deliverables, see:
 * **[IMPLEMENTATION_PHASES.md](file:///Users/hello/food_management/IMPLEMENTATION_PHASES.md)**
+* **[UI_DESIGN_SYSTEM.md](file:///Users/hello/food_management/ui/UI_DESIGN_SYSTEM.md)** — Comprehensive UI/UX design tokens, typography, component inventory, and screen specifications.
 
 ---
 
