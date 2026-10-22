@@ -1,30 +1,44 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:food_management/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Phase 1 Scaffolding: App boots and navigates across tabs', (WidgetTester tester) async {
+    // Build the app inside a ProviderScope
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: FoodManagementApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Verify initial screen is Dashboard
+    expect(find.text('Dashboard'), findsAtLeastNWidgets(1));
+    expect(find.text('Smart Fridge System Active'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // Verify navigation bar destinations exist
+    expect(find.text('Fridge'), findsOneWidget);
+    expect(find.text('Calendar'), findsOneWidget);
+    expect(find.text('Recipes'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Tap on Settings tab
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+
+    // Verify Settings screen is displayed
+    expect(find.text('Appearance'), findsOneWidget);
+    expect(find.text('System'), findsOneWidget);
+    expect(find.text('Light'), findsOneWidget);
+    expect(find.text('Dark'), findsOneWidget);
+
+    // Tap on Fridge tab
+    await tester.tap(find.text('Fridge'));
+    await tester.pumpAndSettle();
+
+    // Verify Fridge screen is displayed
+    expect(find.text('My Fridge'), findsOneWidget);
+    expect(find.text('Fridge Inventory'), findsOneWidget);
   });
 }
