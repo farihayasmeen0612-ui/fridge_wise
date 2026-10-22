@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:food_management/main.dart';
 
 void main() {
-  testWidgets('Phase 1 Scaffolding: App boots and navigates across tabs', (WidgetTester tester) async {
+  testWidgets('Phase 1 & 2: App boots, shows live summary metrics, and navigates tabs', (WidgetTester tester) async {
     // Build the app inside a ProviderScope
     await tester.pumpWidget(
       const ProviderScope(
@@ -16,6 +16,12 @@ void main() {
     // Verify initial screen is Dashboard
     expect(find.text('Dashboard'), findsAtLeastNWidgets(1));
     expect(find.text('Smart Fridge System Active'), findsOneWidget);
+
+    // Verify Phase 2 live summary KPI chips are displayed
+    expect(find.text('Tracked'), findsOneWidget);
+    expect(find.text('Expiring Soon'), findsOneWidget);
+    expect(find.text('Expired'), findsOneWidget);
+    expect(find.text('10'), findsOneWidget); // 10 initial active seed items
 
     // Verify navigation bar destinations exist
     expect(find.text('Fridge'), findsOneWidget);
