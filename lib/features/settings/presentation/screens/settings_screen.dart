@@ -1,64 +1,149 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/presentation/components/app_button.dart';
+import '../../../../core/presentation/components/app_confirm_dialog.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/theme/theme_notifier.dart';
+import '../../../auth/data/auth_provider.dart';
+import '../../../inventory/data/inventory_providers.dart';
 
-/// Phase 1 Settings Screen with working Material 3 Theme Mode Switcher.
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  int _alertDaysBefore = 1;
+  bool _dailyDigestEnabled = true;
+
+  Future<void> _handleSignOut() async {
+    final confirmed = await AppConfirmDialog.show(
+      context,
+      title: 'Sign Out?',
+      message: 'Are you sure you want to sign out of your smart fridge profile?',
+      confirmLabel: 'Sign Out',
+      isDestructive: true,
+    );
+
+    if (confirmed == true && mounted) {
+      await ref.read(authProvider.notifier).signOut();
+      if (mounted) {
+        context.go('/auth/login');
+      }
+    }
+  }
+
+  Future<void> _handleResetData() async {
+    final confirmed = await AppConfirmDialog.show(
+      context,
+      title: 'Reset Demo Inventory?',
+      message: 'This will reset your local fridge inventory back to the 10 initial sample items.',
+      confirmLabel: 'Reset Data',
+      isDestructive: false,
+    );
+
+    if (confirmed == true && mounted) {
+      ref.invalidate(inventoryNotifierProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Inventory reset to default seed items.'),
+          backgroundColor: context.appColors.freshnessSuccess,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final colors = context.appColors;
+    final colorScheme = Theme.of(context).colorScheme;
     final currentThemeMode = ref.watch(themeNotifierProvider);
+    final user = ref.watch(authProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Settings',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
+        title: const Text('Settings'),
       ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            Text(
-              'Appearance',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: colors.textSecondary,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 12),
+            // User Profile Card
             Container(
-              width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).cardTheme.color,
-                borderRadius: BorderRadius.circular(12),
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: colors.cardBorder),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: colors.freshnessContainer,
+                    child: Text(
+                      user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: colors.freshnessSuccess,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.name,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          user.email,
+                          style: TextStyle(fontSize: 13, color: colors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Section 1: Appearance
+            _SectionHeader(title: 'APPEARANCE'),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: colors.cardBorder),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Theme Mode',
+                    'Theme Preference',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Select how the application appearance behaves across your device.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: colors.textSecondary,
-                    ),
+                    'Choose how the application appears across light and dark environments.',
+                    style: TextStyle(fontSize: 13, color: colors.textSecondary),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
@@ -82,7 +167,7 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                       ],
                       selected: {currentThemeMode},
-                      onSelectionChanged: (Set<ThemeMode> newSelection) {
+                      onSelectionChanged: (newSelection) {
                         ref
                             .read(themeNotifierProvider.notifier)
                             .setThemeMode(newSelection.first);
@@ -93,72 +178,199 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            Text(
-              'System Information',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: colors.textSecondary,
-                letterSpacing: 0.5,
+
+            // Section 2: Expiry Notifications
+            _SectionHeader(title: 'EXPIRY NOTIFICATIONS'),
+            const SizedBox(height: 8),
+            Material(
+              color: colorScheme.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: colors.cardBorder),
+              ),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Daily Expiry Digest'),
+                    subtitle: const Text('Receive a daily 9:00 AM summary of items nearing expiry'),
+                    value: _dailyDigestEnabled,
+                    onChanged: (val) => setState(() => _dailyDigestEnabled = val),
+                  ),
+                  Divider(height: 1, color: colors.cardBorder),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Alert Threshold',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Notify when item reaches',
+                              style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                            ),
+                          ],
+                        ),
+                        DropdownButton<int>(
+                          value: _alertDaysBefore,
+                          underline: const SizedBox(),
+                          items: const [
+                            DropdownMenuItem(value: 1, child: Text('1 day before')),
+                            DropdownMenuItem(value: 2, child: Text('2 days before')),
+                            DropdownMenuItem(value: 3, child: Text('3 days before')),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) setState(() => _alertDaysBefore = val);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
+
+            // Section 3: Hardware Connection
+            _SectionHeader(title: 'CONNECTED HARDWARE'),
+            const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: colors.surfaceElevated,
-                borderRadius: BorderRadius.circular(12),
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: colors.cardBorder),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: colors.surfaceElevated,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: colors.cardBorder),
+                    ),
+                    child: Icon(Icons.memory_rounded, size: 22, color: colorScheme.primary),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ESP32-S3 CAM Module',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Bench Mock Mode (Ready for Phase 7 WiFi pairing)',
+                          style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: colors.freshnessContainer,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'READY',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: colors.freshnessSuccess,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Section 4: Data Management & Reset
+            _SectionHeader(title: 'DATA MANAGEMENT'),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: colors.cardBorder),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Project Version',
-                        style: TextStyle(color: colors.textSecondary, fontSize: 13),
-                      ),
-                      const Text(
-                        '1.0.0 (Phase 1 Scaffolding)',
-                        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                      ),
-                    ],
+                  Text(
+                    'Reset Mock Inventory',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'State Management',
-                        style: TextStyle(color: colors.textSecondary, fontSize: 13),
-                      ),
-                      const Text(
-                        'Flutter Riverpod',
-                        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                      ),
-                    ],
+                  const SizedBox(height: 4),
+                  Text(
+                    'Restore the sample inventory with 10 seed items across all categories and status tiers.',
+                    style: TextStyle(fontSize: 12, color: colors.textSecondary),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Design Standard',
-                        style: TextStyle(color: colors.textSecondary, fontSize: 13),
-                      ),
-                      const Text(
-                        'Material 3 (Zero Emojis)',
-                        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                      ),
-                    ],
+                  const SizedBox(height: 12),
+                  AppButton(
+                    label: 'Reset to Sample Data',
+                    variant: AppButtonVariant.secondary,
+                    onPressed: _handleResetData,
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 32),
+
+            // Sign Out Button
+            AppButton(
+              label: 'Sign Out',
+              icon: Icons.logout_rounded,
+              variant: AppButtonVariant.destructive,
+              isFullWidth: true,
+              onPressed: _handleSignOut,
+            ),
+            const SizedBox(height: 32),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: context.appColors.textSecondary,
+        letterSpacing: 0.5,
       ),
     );
   }
