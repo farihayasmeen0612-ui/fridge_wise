@@ -1,56 +1,76 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../scan/data/pending_requests_provider.dart';
 import '../domain/models/app_notification.dart';
 
 class NotificationsNotifier extends Notifier<List<AppNotification>> {
+  final Set<String> _readIds = {};
+  final List<AppNotification> _manualNotifications = [];
+
   @override
   List<AppNotification> build() {
-    final now = DateTime.now();
+    final pendingRequests = ref.watch(pendingRequestsProvider);
+
+    final pendingNotifications = pendingRequests.map((req) {
+      final notifId = 'notif_pending_${req.id}';
+      final isRead = _readIds.contains(notifId);
+
+      if (req.isIntake) {
+        final bool isFoodDetected =
+            req.hasFood && (req.aiDetectedName != null && req.aiDetectedName!.trim().isNotEmpty);
+        return AppNotification(
+          id: notifId,
+          title: isFoodDetected
+              ? 'Food Intake Waiting for Review'
+              : 'New Capture Waiting for Review',
+          message: isFoodDetected
+              ? 'ESP32 camera identified "${req.aiDetectedName}". Tap to verify and confirm.'
+              : 'Camera captured an image with no food detected. Tap to review or delete.',
+          timestamp: req.timestamp,
+          type: NotificationType.hardwareEvent,
+          isRead: isRead,
+          relatedRequestId: req.id,
+          requestType: 'in',
+        );
+      } else {
+        return AppNotification(
+          id: notifId,
+          title: 'Food Removal Waiting for Review',
+          message:
+              'Physical OUT button pressed. Tap to inspect captured photo and select removed items.',
+          timestamp: req.timestamp,
+          type: NotificationType.hardwareEvent,
+          isRead: isRead,
+          relatedRequestId: req.id,
+          requestType: 'out',
+        );
+      }
+    }).toList();
 
     return [
-      AppNotification(
-        id: 'notif-1',
-        title: 'Item Expired',
-        message: 'Orange Juice expired 2 days ago in Fridge. Discard to maintain hygiene.',
-        timestamp: now.subtract(const Duration(hours: 2)),
-        type: NotificationType.expiredAlert,
-        isRead: false,
-        relatedFoodItemId: 'seed-item-1',
-      ),
-      AppNotification(
-        id: 'notif-2',
-        title: 'Expires Today',
-        message: 'Fresh Salmon Fillet should be cooked or frozen today.',
-        timestamp: now.subtract(const Duration(hours: 5)),
-        type: NotificationType.expiringSoonAlert,
-        isRead: false,
-        relatedFoodItemId: 'seed-item-2',
-      ),
-      AppNotification(
-        id: 'notif-3',
-        title: 'Simulated Hardware Trigger',
-        message: 'ESP32 CAM captured an intake scan. Ready for review.',
-        timestamp: now.subtract(const Duration(hours: 8)),
-        type: NotificationType.hardwareEvent,
-        isRead: true,
-      ),
+      ...pendingNotifications,
+      ..._manualNotifications.map((n) => n.copyWith(isRead: _readIds.contains(n.id))),
     ];
   }
 
   void markAsRead(String id) {
-    state = state.map((n) {
-      if (n.id == id) {
-        return n.copyWith(isRead: true);
-      }
-      return n;
-    }).toList();
+    _readIds.add(id);
+    ref.invalidateSelf();
   }
 
   void markAllAsRead() {
-    state = state.map((n) => n.copyWith(isRead: true)).toList();
+    for (final notif in state) {
+      _readIds.add(notif.id);
+    }
+    ref.invalidateSelf();
   }
 
   void clearAll() {
-    state = [];
+    for (final notif in state) {
+      _readIds.add(notif.id);
+    }
+    _manualNotifications.clear();
+    ref.invalidateSelf();
   }
 }
 

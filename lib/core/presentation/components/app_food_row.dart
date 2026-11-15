@@ -34,7 +34,7 @@ class AppFoodRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
-              // Category icon / Thumbnail container
+              // Storage Location icon / Thumbnail container
               Container(
                 width: 44,
                 height: 44,
@@ -43,13 +43,43 @@ class AppFoodRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: colors.cardBorder),
                 ),
-                child: Center(
-                  child: Icon(
-                    item.category.icon,
-                    size: 22,
-                    color: colorScheme.primary,
-                  ),
-                ),
+                clipBehavior: Clip.antiAlias,
+                child: item.imageUrl != null && item.imageUrl!.isNotEmpty
+                    ? Image.network(
+                        item.imageUrl!,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Icon(
+                            item.storageLocation.icon,
+                            size: 22,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Icon(
+                          item.storageLocation.icon,
+                          size: 22,
+                          color: colorScheme.primary,
+                        ),
+                      ),
               ),
               const SizedBox(width: 14),
 
@@ -70,31 +100,13 @@ class AppFoodRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        Text(
-                          item.category.label,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                        Text(
-                          ' • ',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colors.cardBorder,
-                          ),
-                        ),
-                        Text(
-                          item.storageLocation.label,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      item.storageLocation.label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: colors.textSecondary,
+                      ),
                     ),
                   ],
                 ),

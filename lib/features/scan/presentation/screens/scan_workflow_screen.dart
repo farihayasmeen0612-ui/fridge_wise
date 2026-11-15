@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+
 import '../../../../core/presentation/components/app_button.dart';
 import '../../../../core/presentation/components/app_text_field.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../inventory/data/inventory_providers.dart';
-import '../../../inventory/domain/models/food_category.dart';
 import '../../../inventory/domain/models/food_item.dart';
-import '../../../inventory/domain/models/storage_location.dart';
 
 enum ScanStep {
   chooseOperation,
@@ -29,14 +27,9 @@ class ScanWorkflowScreen extends ConsumerStatefulWidget {
 
 class _ScanWorkflowScreenState extends ConsumerState<ScanWorkflowScreen> {
   late String _mode; // 'in' or 'out'
-  ScanStep _currentStep = ScanStep.chooseOperation;
+  ScanStep _currentStep = ScanStep.captureImage;
 
-  // Recognized / Edit State
-  final String _predictedName = 'Fresh Organic Strawberries';
-  final FoodCategory _predictedCategory = FoodCategory.produce;
-  final StorageLocation _selectedLocation = StorageLocation.fridge;
-  String _unit = 'packs';
-  DateTime? _confirmedExpiryDate;
+  // Recognized / Edit State (for OUT mode)
   FoodItem? _selectedOutItem; // For OUT mode: existing item in fridge
 
   final _nameController = TextEditingController();
@@ -46,8 +39,11 @@ class _ScanWorkflowScreenState extends ConsumerState<ScanWorkflowScreen> {
   void initState() {
     super.initState();
     _mode = widget.initialMode.toLowerCase() == 'out' ? 'out' : 'in';
-    _currentStep = ScanStep.captureImage; // Quick jump to capture since mode is passed
-    _nameController.text = _predictedName;
+    if (_mode == 'out') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.pushReplacement('/take-out');
+      });
+    }
   }
 
   @override
@@ -65,16 +61,11 @@ class _ScanWorkflowScreenState extends ConsumerState<ScanWorkflowScreen> {
 
     if (!mounted) return;
 
-    if (_mode == 'in') {
-      _nameController.text = _predictedName;
-      _confirmedExpiryDate = DateTime.now().add(const Duration(days: 5));
-    } else {
-      // For OUT: match first active item in fridge if available
-      final items = ref.read(inventoryNotifierProvider);
-      if (items.isNotEmpty) {
-        _selectedOutItem = items.first;
-        _nameController.text = _selectedOutItem!.name;
-      }
+    // For OUT: match first active item in fridge if available
+    final items = ref.read(inventoryNotifierProvider);
+    if (items.isNotEmpty) {
+      _selectedOutItem = items.first;
+      _nameController.text = _selectedOutItem!.name;
     }
 
     setState(() => _currentStep = ScanStep.reviewPrediction);
@@ -83,41 +74,16 @@ class _ScanWorkflowScreenState extends ConsumerState<ScanWorkflowScreen> {
   Future<void> _commitOperation() async {
     final notifier = ref.read(inventoryNotifierProvider.notifier);
 
-    if (_mode == 'in') {
-      if (_confirmedExpiryDate == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please verify or select the expiration date.')),
-        );
-        return;
-      }
-
-      final newItem = FoodItem(
-        id: 'scan-${DateTime.now().microsecondsSinceEpoch}',
-        name: _nameController.text.trim(),
-        category: _predictedCategory,
-        storageLocation: _selectedLocation,
-        purchaseDate: DateTime.now(),
-        expiryDate: _confirmedExpiryDate!,
-        quantity: double.tryParse(_qtyController.text) ?? 1.0,
-        unit: _unit,
-        notes: 'Captured via camera scan workflow (Simulated)',
-      );
-
-      await notifier.addItem(newItem);
-    } else {
-      // OUT mode: deduct quantity
-      if (_selectedOutItem != null) {
-        final deduct = double.tryParse(_qtyController.text) ?? 1.0;
-        await notifier.markConsumed(_selectedOutItem!.id, quantity: deduct);
-      }
+    // OUT mode: deduct quantity
+    if (_selectedOutItem != null) {
+      final deduct = double.tryParse(_qtyController.text) ?? 1.0;
+      await notifier.markConsumed(_selectedOutItem!.id, quantity: deduct);
     }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_mode == 'in'
-              ? 'Item successfully logged into fridge!'
-              : 'Food deduction logged successfully!'),
+          content: const Text('Food deduction logged successfully!'),
           backgroundColor: context.appColors.freshnessSuccess,
         ),
       );
@@ -140,156 +106,27 @@ class _ScanWorkflowScreenState extends ConsumerState<ScanWorkflowScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Operation indicator
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: colors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: colors.cardBorder),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _mode == 'in' ? Icons.login_rounded : Icons.logout_rounded,
-                      color: _mode == 'in' ? colorScheme.primary : colors.warningAmber,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _mode == 'in'
-                            ? 'Adding food: Camera will identify food and ask you to confirm expiry.'
-                            : 'Extracting food: Camera will identify items to deduct or finish.',
-                        style: TextStyle(fontSize: 12, color: colors.textSecondary),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Step B: Camera Preview / Viewfinder
-              if (_currentStep == ScanStep.captureImage) ...[
-                AspectRatio(
-                  aspectRatio: 4 / 3,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black87,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: colors.cardBorder, width: 2),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.camera_alt_outlined, size: 54, color: Colors.white70),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Camera Viewfinder (Mock Preview)',
-                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Hold item 20-30 cm away with good lighting',
-                              style: TextStyle(color: Colors.white60, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                        // Corner brackets
-                        Positioned(
-                          top: 16,
-                          left: 16,
-                          child: Icon(Icons.crop_free_rounded, size: 36, color: colorScheme.primary),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                AppButton(
-                  label: 'Simulate Camera Trigger',
-                  icon: Icons.camera_rounded,
-                  isFullWidth: true,
-                  onPressed: _simulateCapture,
-                ),
-                const SizedBox(height: 10),
-                AppButton(
-                  label: 'Switch to Manual Input',
-                  variant: AppButtonVariant.secondary,
-                  isFullWidth: true,
-                  onPressed: () {
-                    context.pop();
-                    context.push('/food-form');
-                  },
-                ),
-              ],
-
-              // Step C: Processing
-              if (_currentStep == ScanStep.processing) ...[
-                const SizedBox(height: 60),
-                Center(
-                  child: Column(
-                    children: [
-                      CircularProgressIndicator(color: colorScheme.primary),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Analyzing Food Visuals...',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Extracting classification and packaging characteristics.',
-                        style: TextStyle(fontSize: 13, color: colors.textSecondary),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              // Step D & E: Review & Confirm
-              if (_currentStep == ScanStep.reviewPrediction) ...[
-                // AI prediction badge (Simulated honest indicator)
+              // ========================================================
+              // IN MODE: EXACTLY TWO OPTIONS (Scan Camera vs Manual)
+              // ========================================================
+              if (_mode == 'in') ...[
+                // Operation header banner
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     color: colors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: colors.cardBorder),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.smart_toy_outlined, size: 16, color: colors.secondaryAction),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Simulated AI Result (Confidence: 94%)',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: colors.secondaryAction),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                if (_mode == 'in') ...[
-                  // Food Name correction
-                  AppTextField(
-                    label: 'Recognized Item Name (Verify or Edit)',
-                    controller: _nameController,
-                    prefixIcon: Icons.edit_note_rounded,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Quantity and unit
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppTextField(
-                          label: 'Quantity',
-                          controller: _qtyController,
-                          keyboardType: TextInputType.number,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
                         ),
+                        child: Icon(Icons.login_rounded, color: colorScheme.primary, size: 20),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -297,82 +134,291 @@ class _ScanWorkflowScreenState extends ConsumerState<ScanWorkflowScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Unit',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: colors.textSecondary),
+                              'Choose Intake Method',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: colorScheme.onSurface,
+                              ),
                             ),
-                            const SizedBox(height: 6),
-                            Container(
-                              height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: colors.surfaceElevated,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: colors.cardBorder),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: _unit,
-                                  isExpanded: true,
-                                  items: ['pcs', 'packs', 'kg', 'g', 'L', 'ml'].map((u) {
-                                    return DropdownMenuItem(value: u, child: Text(u));
-                                  }).toList(),
-                                  onChanged: (v) {
-                                    if (v != null) setState(() => _unit = v);
-                                  },
-                                ),
-                              ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Log newly purchased items into your fridge inventory.',
+                              style: TextStyle(fontSize: 12, color: colors.textSecondary),
                             ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                ),
+                const SizedBox(height: 18),
 
-                  // Explicit Expiry Date Picker (Mandatory)
-                  Text(
-                    'Expiration Date (Explicit Confirmation Required)',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: colors.textSecondary),
-                  ),
-                  const SizedBox(height: 6),
-                  InkWell(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _confirmedExpiryDate ?? DateTime.now().add(const Duration(days: 7)),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-                      );
-                      if (picked != null) {
-                        setState(() => _confirmedExpiryDate = picked);
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceElevated,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: colors.cardBorder),
+                // Option 1: Scan with Fridge Camera (Primary IoT method)
+                Container(
+                  decoration: BoxDecoration(
+                    color: colors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.primary.withValues(alpha: 0.35),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.primary.withValues(alpha: 0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                      child: Row(
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => context.push('/fridge-camera'),
+                      child: Padding(
+                        padding: const EdgeInsets.all(18.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(Icons.camera_enhance_rounded, color: colorScheme.primary, size: 26),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Scan with Fridge Camera',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: colorScheme.onSurface,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: colors.freshnessSuccess.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          'PRIMARY IOT METHOD • ESP32-S3 CAM',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: colors.freshnessSuccess,
+                                            letterSpacing: 0.4,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(Icons.arrow_forward_ios_rounded, size: 16, color: colors.textSecondary),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              'Automatically detect produce via the camera mounted inside your fridge.\n'
+                              'Press the physical IN button on your fridge to capture food.',
+                              style: TextStyle(fontSize: 13, color: colors.textSecondary, height: 1.4),
+                            ),
+                            const SizedBox(height: 16),
+                            AppButton(
+                              label: 'Scan with Fridge Camera',
+                              icon: Icons.camera_alt_rounded,
+                              isFullWidth: true,
+                              onPressed: () => context.push('/fridge-camera'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Option 2: Enter Manually (Preserves existing workflow completely)
+                Container(
+                  decoration: BoxDecoration(
+                    color: colors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: colors.cardBorder),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => context.push('/food-form'),
+                      child: Padding(
+                        padding: const EdgeInsets.all(18.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: colors.surfaceElevated,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: colors.cardBorder),
+                                  ),
+                                  child: Icon(Icons.edit_note_rounded, color: colorScheme.onSurface, size: 26),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Enter Manually',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: colorScheme.onSurface,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Standard manual entry workflow',
+                                        style: TextStyle(fontSize: 11, color: colors.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(Icons.arrow_forward_ios_rounded, size: 16, color: colors.textSecondary),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              'Type item name, category, quantity, storage location, and set confirmed expiration date.',
+                              style: TextStyle(fontSize: 13, color: colors.textSecondary, height: 1.4),
+                            ),
+                            const SizedBox(height: 16),
+                            AppButton(
+                              label: 'Enter Manually',
+                              variant: AppButtonVariant.secondary,
+                              icon: Icons.edit_rounded,
+                              isFullWidth: true,
+                              onPressed: () => context.push('/food-form'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                // ========================================================
+                // OUT MODE: REMAINING WORKFLOW (Untouched Extraction Flow)
+                // ========================================================
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: colors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: colors.cardBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.logout_rounded,
+                        color: colors.warningAmber,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Extracting food: Camera will identify items to deduct or finish.',
+                          style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                if (_currentStep == ScanStep.captureImage) ...[
+                  AspectRatio(
+                    aspectRatio: 4 / 3,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: colors.cardBorder, width: 2),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
                         children: [
-                          Icon(Icons.calendar_today_rounded, size: 18, color: colorScheme.primary),
-                          const SizedBox(width: 12),
-                          Text(
-                            _confirmedExpiryDate != null
-                                ? DateFormat('EEEE, MMM d, yyyy').format(_confirmedExpiryDate!)
-                                : 'Tap to set confirmed expiration date',
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.camera_alt_outlined, size: 54, color: Colors.white70),
+                              SizedBox(height: 12),
+                              Text(
+                                'Camera Viewfinder (Mock Preview)',
+                                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Hold item 20-30 cm away with good lighting',
+                                style: TextStyle(color: Colors.white60, fontSize: 12),
+                              ),
+                            ],
                           ),
-                          const Spacer(),
-                          const Icon(Icons.chevron_right_rounded, size: 20),
+                          Positioned(
+                            top: 16,
+                            left: 16,
+                            child: Icon(Icons.crop_free_rounded, size: 36, color: colorScheme.primary),
+                          ),
                         ],
                       ),
                     ),
                   ),
-                ] else ...[
-                  // OUT Mode: candidate match from active items
+                  const SizedBox(height: 20),
+                  AppButton(
+                    label: 'Simulate Camera Trigger',
+                    icon: Icons.camera_rounded,
+                    isFullWidth: true,
+                    onPressed: _simulateCapture,
+                  ),
+                ],
+
+                if (_currentStep == ScanStep.processing) ...[
+                  const SizedBox(height: 60),
+                  Center(
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(color: colorScheme.primary),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Analyzing Food Visuals...',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Matching items in fridge to deduct.',
+                          style: TextStyle(fontSize: 13, color: colors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                if (_currentStep == ScanStep.reviewPrediction) ...[
                   Consumer(
                     builder: (context, ref, _) {
                       final items = ref.watch(inventoryNotifierProvider);
@@ -401,7 +447,7 @@ class _ScanWorkflowScreenState extends ConsumerState<ScanWorkflowScreen> {
                                 ),
                               ),
                               child: ListTile(
-                                leading: Icon(item.category.icon, color: colorScheme.primary),
+                                leading: Icon(item.storageLocation.icon, color: colorScheme.primary),
                                 title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                                 subtitle: Text('Available: ${item.quantity} ${item.unit}'),
                                 trailing: isSelected
@@ -426,21 +472,20 @@ class _ScanWorkflowScreenState extends ConsumerState<ScanWorkflowScreen> {
                       );
                     },
                   ),
+                  const SizedBox(height: 28),
+                  AppButton(
+                    label: 'Confirm Extraction',
+                    isFullWidth: true,
+                    onPressed: _commitOperation,
+                  ),
+                  const SizedBox(height: 10),
+                  AppButton(
+                    label: 'Cancel',
+                    variant: AppButtonVariant.secondary,
+                    isFullWidth: true,
+                    onPressed: () => context.pop(),
+                  ),
                 ],
-                const SizedBox(height: 28),
-
-                AppButton(
-                  label: _mode == 'in' ? 'Confirm and Add Item' : 'Confirm Extraction',
-                  isFullWidth: true,
-                  onPressed: _commitOperation,
-                ),
-                const SizedBox(height: 10),
-                AppButton(
-                  label: 'Cancel',
-                  variant: AppButtonVariant.secondary,
-                  isFullWidth: true,
-                  onPressed: () => context.pop(),
-                ),
               ],
             ],
           ),

@@ -18,6 +18,8 @@ class AppNotification {
     required this.type,
     this.isRead = false,
     this.relatedFoodItemId,
+    this.relatedRequestId,
+    this.requestType,
   });
 
   final String id;
@@ -27,6 +29,8 @@ class AppNotification {
   final NotificationType type;
   final bool isRead;
   final String? relatedFoodItemId;
+  final String? relatedRequestId;
+  final String? requestType;
 
   AppNotification copyWith({
     String? id,
@@ -36,6 +40,8 @@ class AppNotification {
     NotificationType? type,
     bool? isRead,
     String? relatedFoodItemId,
+    String? relatedRequestId,
+    String? requestType,
   }) {
     return AppNotification(
       id: id ?? this.id,
@@ -45,6 +51,8 @@ class AppNotification {
       type: type ?? this.type,
       isRead: isRead ?? this.isRead,
       relatedFoodItemId: relatedFoodItemId ?? this.relatedFoodItemId,
+      relatedRequestId: relatedRequestId ?? this.relatedRequestId,
+      requestType: requestType ?? this.requestType,
     );
   }
 }

@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 
 /// Physical storage compartments for tracked food items.
 enum StorageLocation {
-  fridge(
-    label: 'Fridge',
+  refrigerator(
+    label: 'Refrigerator',
     icon: Icons.kitchen_rounded,
   ),
   freezer(
     label: 'Freezer',
     icon: Icons.ac_unit_rounded,
   ),
-  pantry(
-    label: 'Pantry',
-    icon: Icons.inventory_rounded,
+  deepFridge(
+    label: 'Deep Fridge',
+    icon: Icons.severe_cold_rounded,
   );
 
   const StorageLocation({
@@ -24,11 +24,27 @@ enum StorageLocation {
   final IconData icon;
 
   static StorageLocation fromString(String? value) {
-    if (value == null) return StorageLocation.fridge;
+    if (value == null) return StorageLocation.refrigerator;
+    final normalized = value.trim().toLowerCase();
+
+    // Backward compatibility for existing records
+    if (normalized == 'fridge' || normalized == 'refrigerator') {
+      return StorageLocation.refrigerator;
+    }
+    if (normalized == 'freezer') {
+      return StorageLocation.freezer;
+    }
+    if (normalized == 'deep fridge' ||
+        normalized == 'deep_fridge' ||
+        normalized == 'deepfridge') {
+      return StorageLocation.deepFridge;
+    }
+
     return StorageLocation.values.firstWhere(
-      (loc) => loc.name.toLowerCase() == value.toLowerCase() ||
-               loc.label.toLowerCase() == value.toLowerCase(),
-      orElse: () => StorageLocation.fridge,
+      (loc) =>
+          loc.name.toLowerCase() == normalized ||
+          loc.label.toLowerCase() == normalized,
+      orElse: () => StorageLocation.refrigerator,
     );
   }
 }

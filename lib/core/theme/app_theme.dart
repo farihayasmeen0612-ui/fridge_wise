@@ -7,20 +7,20 @@ class AppTheme {
   AppTheme._();
 
   // --- Light Palette Constants ---
-  static const Color _lightScaffoldBg = Color(0xFFF9F9F7); // Warm Off-White
+  static const Color _lightScaffoldBg = Color(0xFFF7F7F2); // Warm ivory #F7F7F2
   static const Color _lightSurface = Color(0xFFFFFFFF);    // Pure Crisp White
-  static const Color _lightPrimary = Color(0xFF1B5E3B);    // Deep Forest Green
+  static const Color _lightPrimary = Color(0xFF176343);    // Primary green #176343
   static const Color _lightOnPrimary = Color(0xFFFFFFFF);  // High-contrast white
-  static const Color _lightTextPrimary = Color(0xFF181A18);// Near-Black Graphite
-  static const Color _lightBorder = Color(0xFFE4E6DE);     // Subtle Warm Border
+  static const Color _lightTextPrimary = Color(0xFF202820);// Main text #202820
+  static const Color _lightBorder = Color(0xFFE1E4DC);     // Subtle Warm Border
 
   // --- Dark Palette Constants ---
-  static const Color _darkScaffoldBg = Color(0xFF111311);  // Charcoal Canvas
-  static const Color _darkSurface = Color(0xFF191C19);     // Deep Graphite Surface
-  static const Color _darkPrimary = Color(0xFF22C55E);     // Mint Forest Accent
-  static const Color _darkOnPrimary = Color(0xFF062512);   // Deep Green Text
-  static const Color _darkTextPrimary = Color(0xFFF3F5F3); // Crisp Off-White Text
-  static const Color _darkBorder = Color(0xFF2B312B);      // Dark Subtle Border
+  static const Color _darkScaffoldBg = Color(0xFF121915);  // Background #121915
+  static const Color _darkSurface = Color(0xFF1D2821);     // Surface & input bg #1D2821
+  static const Color _darkPrimary = Color(0xFF69C995);     // Primary accent #69C995
+  static const Color _darkOnPrimary = Color(0xFF092616);   // Deep Green Text
+  static const Color _darkTextPrimary = Color(0xFFF1F5F0); // Main text #F1F5F0
+  static const Color _darkBorder = Color(0xFF2B3830);      // Dark Subtle Border
 
   /// Light ThemeData configuration
   static ThemeData get lightTheme {

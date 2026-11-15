@@ -3,7 +3,6 @@ import 'package:food_management/features/dashboard/domain/models/inventory_summa
 import 'package:food_management/features/inventory/data/mock_food_repository.dart';
 import 'package:food_management/features/inventory/domain/models/activity_log_item.dart';
 import 'package:food_management/features/inventory/domain/models/expiry_status.dart';
-import 'package:food_management/features/inventory/domain/models/food_category.dart';
 import 'package:food_management/features/inventory/domain/models/food_item.dart';
 import 'package:food_management/features/inventory/domain/models/storage_location.dart';
 
@@ -12,7 +11,7 @@ void main() {
     late MockFoodRepository repository;
 
     setUp(() {
-      repository = MockFoodRepository();
+      repository = MockFoodRepository(populateSeedData: true);
     });
 
     tearDown(() {
@@ -30,30 +29,26 @@ void main() {
       expect(summary.freshCount, greaterThan(0));
     });
 
-    test('Filter items by StorageLocation (Fridge, Freezer, Pantry)', () async {
-      final fridgeItems = await repository.getItems(location: StorageLocation.fridge);
+    test('Filter items by StorageLocation (Refrigerator, Freezer, Deep Fridge)', () async {
+      final fridgeItems = await repository.getItems(location: StorageLocation.refrigerator);
       final freezerItems = await repository.getItems(location: StorageLocation.freezer);
-      final pantryItems = await repository.getItems(location: StorageLocation.pantry);
+      final deepFridgeItems = await repository.getItems(location: StorageLocation.deepFridge);
 
-      expect(fridgeItems.every((i) => i.storageLocation == StorageLocation.fridge), isTrue);
+      expect(fridgeItems.every((i) => i.storageLocation == StorageLocation.refrigerator), isTrue);
       expect(freezerItems.every((i) => i.storageLocation == StorageLocation.freezer), isTrue);
-      expect(pantryItems.every((i) => i.storageLocation == StorageLocation.pantry), isTrue);
+      expect(deepFridgeItems.every((i) => i.storageLocation == StorageLocation.deepFridge), isTrue);
 
-      expect(fridgeItems.length + freezerItems.length + pantryItems.length, 10);
-    });
-
-    test('Filter items by FoodCategory', () async {
-      final dairyItems = await repository.getItems(category: FoodCategory.dairy);
-      expect(dairyItems.length, 3);
-      expect(dairyItems.every((i) => i.category == FoodCategory.dairy), isTrue);
+      expect(fridgeItems.isNotEmpty, isTrue);
+      expect(freezerItems.isNotEmpty, isTrue);
+      expect(deepFridgeItems.isNotEmpty, isTrue);
+      expect(fridgeItems.length + freezerItems.length + deepFridgeItems.length, 10);
     });
 
     test('addItem adds item and generates ActivityLog', () async {
       final newItem = FoodItem(
         id: 'custom-item-1',
         name: 'Avocado',
-        category: FoodCategory.produce,
-        storageLocation: StorageLocation.fridge,
+        storageLocation: StorageLocation.refrigerator,
         purchaseDate: DateTime.now(),
         expiryDate: DateTime.now().add(const Duration(days: 4)),
         quantity: 2.0,

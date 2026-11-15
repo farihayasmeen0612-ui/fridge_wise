@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/presentation/components/app_button.dart';
 import '../../../../core/presentation/components/app_text_field.dart';
+import '../../../../core/services/supabase_service.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -27,13 +29,39 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 700));
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        _isSuccess = true;
-      });
+    try {
+      final client = supabaseClient;
+      if (client != null) {
+        await client.auth.resetPasswordForEmail(_emailController.text.trim().toLowerCase());
+      }
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isSuccess = true;
+        });
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to dispatch reset link: ${e.toString()}'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -81,7 +109,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'In production, an email would be sent to ${_emailController.text}. (Simulated local demo)',
+                          'A password reset link has been dispatched to ${_emailController.text}. Please check your inbox.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,

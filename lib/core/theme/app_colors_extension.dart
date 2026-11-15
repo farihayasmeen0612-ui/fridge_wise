@@ -38,42 +38,42 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   final Color secondaryAction;
   final Color badgeBackgroundTint;
 
-  /// Light theme tokens (Warm off-white base, deep forest green primary)
+  /// Light theme tokens (Warm ivory base, forest green primary, mint accent)
   static const AppColorsExtension light = AppColorsExtension(
-    surfaceElevated: Color(0xFFF0F1ED),
-    cardBorder: Color(0xFFE4E6DE),
-    freshnessSuccess: Color(0xFF166534), // Forest Mint Green (WCAG 7.1:1)
-    freshnessContainer: Color(0xFFDCFCE7),
-    freshnessBorder: Color(0xFF86EFAC),
+    surfaceElevated: Color(0xFFF0F2EC), // Input background #F0F2EC
+    cardBorder: Color(0xFFE1E4DC),
+    freshnessSuccess: Color(0xFF176343), // Primary green #176343
+    freshnessContainer: Color(0xFFDDF5E5), // Accent mint #DDF5E5
+    freshnessBorder: Color(0xFFA5E2BE),
     warningAmber: Color(0xFF9A3412),     // Terracotta Amber (WCAG 6.1:1)
     warningContainer: Color(0xFFFFEDD5),
     warningBorder: Color(0xFFFDBA74),
     dangerRed: Color(0xFF991B1B),        // Deep Crimson (WCAG 7.4:1)
     dangerContainer: Color(0xFFFEE2E2),
     dangerBorder: Color(0xFFFCA5A5),
-    textSecondary: Color(0xFF525852),    // Slate Moss (WCAG 6.5:1)
-    textMuted: Color(0xFF737973),        // Neutral Muted (WCAG 4.6:1)
+    textSecondary: Color(0xFF526154),    // Readable muted gray-green (WCAG 5.2:1)
+    textMuted: Color(0xFF768378),        // Neutral Muted
     secondaryAction: Color(0xFF1E40AF),  // Slate Cobalt
-    badgeBackgroundTint: Color(0x1F181A18),
+    badgeBackgroundTint: Color(0x1F202820),
   );
 
-  /// Dark theme tokens (Charcoal & Graphite base, vibrant mint green accents)
+  /// Dark theme tokens (Dark charcoal base, mint primary accent, muted sage text)
   static const AppColorsExtension dark = AppColorsExtension(
-    surfaceElevated: Color(0xFF222622),
-    cardBorder: Color(0xFF2B312B),
-    freshnessSuccess: Color(0xFF4ADE80), // Bright Mint (WCAG 8.4:1)
-    freshnessContainer: Color(0xFF143820),
-    freshnessBorder: Color(0xFF1E5C33),
+    surfaceElevated: Color(0xFF1D2821), // Surface & input background #1D2821
+    cardBorder: Color(0xFF2B3830),
+    freshnessSuccess: Color(0xFF69C995), // Primary accent #69C995
+    freshnessContainer: Color(0xFF163523),
+    freshnessBorder: Color(0xFF245237),
     warningAmber: Color(0xFFFDBA74),     // Warm Peach-Amber (WCAG 7.5:1)
     warningContainer: Color(0xFF3E200C),
     warningBorder: Color(0xFF7C2D12),
     dangerRed: Color(0xFFFCA5A5),        // Soft Coral Red (WCAG 8.2:1)
     dangerContainer: Color(0xFF3B1313),
     dangerBorder: Color(0xFF7F1D1D),
-    textSecondary: Color(0xFFA3ABA2),    // Muted Steel Slate (WCAG 6.2:1)
-    textMuted: Color(0xFF798278),        // Dark Muted Grey (WCAG 4.5:1)
+    textSecondary: Color(0xFFB1BDB3),    // Secondary text #B1BDB3 (WCAG 8.6:1)
+    textMuted: Color(0xFF7C897E),        // Dark Muted Grey
     secondaryAction: Color(0xFF3B82F6),  // Electric Slate Blue
-    badgeBackgroundTint: Color(0x26F3F5F3),
+    badgeBackgroundTint: Color(0x26F1F5F0),
   );
 
   @override

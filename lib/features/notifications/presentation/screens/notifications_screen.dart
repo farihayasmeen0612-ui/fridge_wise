@@ -81,7 +81,7 @@ class _NotificationTile extends ConsumerWidget {
         break;
     }
 
-    final timeStr = DateFormat('h:mm a').format(notification.timestamp);
+    final timeStr = DateFormat('h:mm a').format(notification.timestamp.toLocal());
 
     return Material(
       color: notification.isRead ? colorScheme.surface : colors.surfaceElevated,
@@ -94,7 +94,13 @@ class _NotificationTile extends ConsumerWidget {
       child: InkWell(
         onTap: () {
           ref.read(notificationsProvider.notifier).markAsRead(notification.id);
-          if (notification.relatedFoodItemId != null) {
+          if (notification.relatedRequestId != null) {
+            if (notification.requestType == 'out') {
+              context.push('/take-out?requestId=${notification.relatedRequestId}');
+            } else {
+              context.push('/fridge-camera?requestId=${notification.relatedRequestId}');
+            }
+          } else if (notification.relatedFoodItemId != null) {
             context.push('/food-details/${notification.relatedFoodItemId}');
           } else if (notification.type == NotificationType.hardwareEvent) {
             context.push('/scan-workflow?mode=in');

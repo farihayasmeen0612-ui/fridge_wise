@@ -1,9 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'food_category.dart';
 
 /// Type of inventory action tracked in the audit log.
 enum LogActionType {
-  added(label: 'Added to Fridge'),
+  added(label: 'Added to Refrigerator'),
   consumed(label: 'Consumed'),
   discarded(label: 'Discarded'),
   updated(label: 'Updated Details');
@@ -19,32 +18,32 @@ class ActivityLogItem {
     required this.id,
     required this.actionType,
     required this.itemName,
-    required this.category,
     required this.quantity,
     required this.unit,
     required this.timestamp,
     this.notes,
+    this.imageUrl,
   });
 
   final String id;
   final LogActionType actionType;
   final String itemName;
-  final FoodCategory category;
   final double quantity;
   final String unit;
   final DateTime timestamp;
   final String? notes;
+  final String? imageUrl;
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'actionType': actionType.name,
       'itemName': itemName,
-      'category': category.name,
       'quantity': quantity,
       'unit': unit,
       'timestamp': timestamp.toIso8601String(),
       'notes': notes,
+      'imageUrl': imageUrl,
     };
   }
 
@@ -56,13 +55,13 @@ class ActivityLogItem {
         orElse: () => LogActionType.added,
       ),
       itemName: map['itemName'] as String? ?? 'Unknown Item',
-      category: FoodCategory.fromString(map['category'] as String?),
       quantity: (map['quantity'] as num?)?.toDouble() ?? 1.0,
       unit: map['unit'] as String? ?? 'pcs',
       timestamp: map['timestamp'] != null
-          ? DateTime.parse(map['timestamp'] as String)
+          ? DateTime.parse(map['timestamp'] as String).toLocal()
           : DateTime.now(),
       notes: map['notes'] as String?,
+      imageUrl: map['imageUrl'] as String?,
     );
   }
 }

@@ -1,26 +1,37 @@
 import 'dart:async';
+import '../../scan/domain/models/pending_food_request.dart';
 import '../domain/models/activity_log_item.dart';
 import '../domain/models/expiry_status.dart';
-import '../domain/models/food_category.dart';
 import '../domain/models/food_item.dart';
 import '../domain/models/storage_location.dart';
 import 'food_repository.dart';
 
-/// In-memory mock implementation of FoodRepository populated with realistic seed data.
+/// In-memory mock implementation of FoodRepository.
 /// Enables offline UI development, widget testing, and state verification.
 class MockFoodRepository implements FoodRepository {
-  MockFoodRepository() {
-    _items = _generateSeedData();
+  MockFoodRepository({bool populateSeedData = false}) {
+    _items = populateSeedData ? _generateSeedData() : [];
     _notifyListeners();
   }
 
   late List<FoodItem> _items;
   final List<ActivityLogItem> _logs = [];
+  final List<PendingFoodRequest> _pendingRequests = [];
   final StreamController<List<FoodItem>> _streamController =
       StreamController<List<FoodItem>>.broadcast();
+  final StreamController<List<PendingFoodRequest>> _pendingRequestsController =
+      StreamController<List<PendingFoodRequest>>.broadcast();
 
   /// Synchronous snapshot for testing and initial state
   List<FoodItem> get itemsSync => List.unmodifiable(_items);
+  List<PendingFoodRequest> get pendingRequestsSync => List.unmodifiable(_pendingRequests);
+
+  void addPendingRequest(PendingFoodRequest req) {
+    _pendingRequests.insert(0, req);
+    if (!_pendingRequestsController.isClosed) {
+      _pendingRequestsController.add(List.unmodifiable(_pendingRequests));
+    }
+  }
 
   static List<FoodItem> _generateSeedData() {
     final now = DateTime.now();
@@ -29,8 +40,7 @@ class MockFoodRepository implements FoodRepository {
       FoodItem(
         id: 'seed-item-1',
         name: 'Orange Juice',
-        category: FoodCategory.beverages,
-        storageLocation: StorageLocation.fridge,
+        storageLocation: StorageLocation.refrigerator,
         purchaseDate: now.subtract(const Duration(days: 9)),
         expiryDate: now.subtract(const Duration(days: 2)),
         quantity: 1.0,
@@ -41,8 +51,7 @@ class MockFoodRepository implements FoodRepository {
       FoodItem(
         id: 'seed-item-2',
         name: 'Fresh Salmon Fillet',
-        category: FoodCategory.seafood,
-        storageLocation: StorageLocation.fridge,
+        storageLocation: StorageLocation.refrigerator,
         purchaseDate: now.subtract(const Duration(days: 2)),
         expiryDate: now,
         quantity: 400.0,
@@ -53,8 +62,7 @@ class MockFoodRepository implements FoodRepository {
       FoodItem(
         id: 'seed-item-3',
         name: 'Whole Milk',
-        category: FoodCategory.dairy,
-        storageLocation: StorageLocation.fridge,
+        storageLocation: StorageLocation.refrigerator,
         purchaseDate: now.subtract(const Duration(days: 5)),
         expiryDate: now.add(const Duration(days: 1)),
         quantity: 1.0,
@@ -64,8 +72,7 @@ class MockFoodRepository implements FoodRepository {
       FoodItem(
         id: 'seed-item-4',
         name: 'Organic Baby Spinach',
-        category: FoodCategory.produce,
-        storageLocation: StorageLocation.fridge,
+        storageLocation: StorageLocation.refrigerator,
         purchaseDate: now.subtract(const Duration(days: 3)),
         expiryDate: now.add(const Duration(days: 2)),
         quantity: 250.0,
@@ -75,8 +82,7 @@ class MockFoodRepository implements FoodRepository {
       FoodItem(
         id: 'seed-item-5',
         name: 'Artisan Sourdough Loaf',
-        category: FoodCategory.bakery,
-        storageLocation: StorageLocation.pantry,
+        storageLocation: StorageLocation.refrigerator,
         purchaseDate: now.subtract(const Duration(days: 1)),
         expiryDate: now.add(const Duration(days: 3)),
         quantity: 1.0,
@@ -86,8 +92,7 @@ class MockFoodRepository implements FoodRepository {
       FoodItem(
         id: 'seed-item-6',
         name: 'Greek Plain Yogurt',
-        category: FoodCategory.dairy,
-        storageLocation: StorageLocation.fridge,
+        storageLocation: StorageLocation.refrigerator,
         purchaseDate: now.subtract(const Duration(days: 2)),
         expiryDate: now.add(const Duration(days: 7)),
         quantity: 500.0,
@@ -97,8 +102,7 @@ class MockFoodRepository implements FoodRepository {
       FoodItem(
         id: 'seed-item-7',
         name: 'Cheddar Cheese Block',
-        category: FoodCategory.dairy,
-        storageLocation: StorageLocation.fridge,
+        storageLocation: StorageLocation.refrigerator,
         purchaseDate: now.subtract(const Duration(days: 4)),
         expiryDate: now.add(const Duration(days: 12)),
         quantity: 200.0,
@@ -108,8 +112,7 @@ class MockFoodRepository implements FoodRepository {
       FoodItem(
         id: 'seed-item-8',
         name: 'Fuji Apples',
-        category: FoodCategory.produce,
-        storageLocation: StorageLocation.fridge,
+        storageLocation: StorageLocation.refrigerator,
         purchaseDate: now.subtract(const Duration(days: 1)),
         expiryDate: now.add(const Duration(days: 14)),
         quantity: 6.0,
@@ -119,7 +122,6 @@ class MockFoodRepository implements FoodRepository {
       FoodItem(
         id: 'seed-item-9',
         name: 'Frozen Mixed Berries',
-        category: FoodCategory.frozen,
         storageLocation: StorageLocation.freezer,
         purchaseDate: now.subtract(const Duration(days: 10)),
         expiryDate: now.add(const Duration(days: 60)),
@@ -129,13 +131,12 @@ class MockFoodRepository implements FoodRepository {
       ),
       FoodItem(
         id: 'seed-item-10',
-        name: 'Extra Virgin Olive Oil',
-        category: FoodCategory.condiments,
-        storageLocation: StorageLocation.pantry,
-        purchaseDate: now.subtract(const Duration(days: 20)),
-        expiryDate: now.add(const Duration(days: 180)),
-        quantity: 750.0,
-        unit: 'ml',
+        name: 'Vanilla Bean Ice Cream',
+        storageLocation: StorageLocation.deepFridge,
+        purchaseDate: now.subtract(const Duration(days: 15)),
+        expiryDate: now.add(const Duration(days: 120)),
+        quantity: 1.0,
+        unit: 'tub',
         status: ItemStatus.active,
       ),
     ];
@@ -148,12 +149,10 @@ class MockFoodRepository implements FoodRepository {
   @override
   Future<List<FoodItem>> getItems({
     StorageLocation? location,
-    FoodCategory? category,
     ItemStatus? status = ItemStatus.active,
   }) async {
     return _items.where((item) {
       if (location != null && item.storageLocation != location) return false;
-      if (category != null && item.category != category) return false;
       if (status != null && item.status != status) return false;
       return true;
     }).toList();
@@ -162,13 +161,11 @@ class MockFoodRepository implements FoodRepository {
   @override
   Stream<List<FoodItem>> watchItems({
     StorageLocation? location,
-    FoodCategory? category,
     ItemStatus? status = ItemStatus.active,
   }) {
     return _streamController.stream.map((list) {
       return list.where((item) {
         if (location != null && item.storageLocation != location) return false;
-        if (category != null && item.category != category) return false;
         if (status != null && item.status != status) return false;
         return true;
       }).toList();
@@ -192,7 +189,6 @@ class MockFoodRepository implements FoodRepository {
         id: 'log-${DateTime.now().microsecondsSinceEpoch}',
         actionType: LogActionType.added,
         itemName: item.name,
-        category: item.category,
         quantity: item.quantity,
         unit: item.unit,
         timestamp: DateTime.now(),
@@ -211,7 +207,6 @@ class MockFoodRepository implements FoodRepository {
           id: 'log-${DateTime.now().microsecondsSinceEpoch}',
           actionType: LogActionType.updated,
           itemName: item.name,
-          category: item.category,
           quantity: item.quantity,
           unit: item.unit,
           timestamp: DateTime.now(),
@@ -253,7 +248,6 @@ class MockFoodRepository implements FoodRepository {
           id: 'log-${DateTime.now().microsecondsSinceEpoch}',
           actionType: LogActionType.consumed,
           itemName: item.name,
-          category: item.category,
           quantity: deductAmount,
           unit: item.unit,
           timestamp: DateTime.now(),
@@ -274,7 +268,6 @@ class MockFoodRepository implements FoodRepository {
           id: 'log-${DateTime.now().microsecondsSinceEpoch}',
           actionType: LogActionType.discarded,
           itemName: item.name,
-          category: item.category,
           quantity: item.quantity,
           unit: item.unit,
           timestamp: DateTime.now(),
@@ -288,7 +281,46 @@ class MockFoodRepository implements FoodRepository {
     return List.unmodifiable(_logs);
   }
 
+  @override
+  Future<List<PendingFoodRequest>> getPendingRequests() async {
+    return List.unmodifiable(_pendingRequests);
+  }
+
+  @override
+  Stream<List<PendingFoodRequest>> watchPendingRequests() {
+    return _pendingRequestsController.stream;
+  }
+
+  @override
+  Future<void> confirmIntake(PendingFoodRequest request, FoodItem confirmedItem) async {
+    await addItem(confirmedItem);
+    _pendingRequests.removeWhere((r) => r.id == request.id);
+    if (!_pendingRequestsController.isClosed) {
+      _pendingRequestsController.add(List.unmodifiable(_pendingRequests));
+    }
+  }
+
+  @override
+  Future<void> confirmTakeOut(PendingFoodRequest request, List<FoodDeduction> deductions) async {
+    for (final deduction in deductions) {
+      await markConsumed(deduction.foodItemId, quantity: deduction.quantity);
+    }
+    _pendingRequests.removeWhere((r) => r.id == request.id);
+    if (!_pendingRequestsController.isClosed) {
+      _pendingRequestsController.add(List.unmodifiable(_pendingRequests));
+    }
+  }
+
+  @override
+  Future<void> dismissPendingRequest(String requestId, String filename) async {
+    _pendingRequests.removeWhere((r) => r.id == requestId || r.filename == filename);
+    if (!_pendingRequestsController.isClosed) {
+      _pendingRequestsController.add(List.unmodifiable(_pendingRequests));
+    }
+  }
+
   void dispose() {
     _streamController.close();
+    _pendingRequestsController.close();
   }
 }

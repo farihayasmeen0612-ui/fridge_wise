@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/presentation/components/app_empty_state.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/mock_recipe_repository.dart';
 import '../../domain/models/recipe.dart';
@@ -35,7 +36,7 @@ class RecipesScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Honest Simulation Notice
+              // AI Zero-Waste Notice
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -49,7 +50,7 @@ class RecipesScreen extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Simulated AI Recommendations: Matched against your active fridge items.',
+                        'Zero-Waste Recommendations: Matched dynamically against your active fridge items.',
                         style: TextStyle(fontSize: 12, color: colors.textSecondary),
                       ),
                     ),
@@ -69,16 +70,26 @@ class RecipesScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
 
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: recipes.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final recipe = recipes[index];
-                  return _RecipeCard(recipe: recipe);
-                },
-              ),
+              if (recipes.isEmpty)
+                AppEmptyState(
+                  icon: Icons.soup_kitchen_outlined,
+                  title: 'No Matching Recipes',
+                  description:
+                      'Add or scan food items into your fridge to generate tailored zero-waste recipe recommendations.',
+                  actionLabel: 'Add Food (IN)',
+                  onAction: () => context.push('/scan-workflow?mode=in'),
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: recipes.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final recipe = recipes[index];
+                    return _RecipeCard(recipe: recipe);
+                  },
+                ),
               const SizedBox(height: 32),
             ],
           ),

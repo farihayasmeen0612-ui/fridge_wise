@@ -1,13 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../auth/data/auth_provider.dart';
 import '../../dashboard/domain/models/inventory_summary.dart';
+import '../domain/models/activity_log_item.dart';
 import '../domain/models/expiry_status.dart';
 import '../domain/models/food_item.dart';
 import 'food_repository.dart';
 import 'mock_food_repository.dart';
+import 'supabase_food_repository.dart';
 
-/// Provider for the abstract FoodRepository (defaults to MockFoodRepository)
+/// Provider for the abstract FoodRepository (defaults to SupabaseFoodRepository with offline fallback)
 final foodRepositoryProvider = Provider<FoodRepository>((ref) {
-  final repository = MockFoodRepository();
+  final auth = ref.watch(authProvider);
+  final repository = SupabaseFoodRepository(userId: auth.isAuthenticated ? auth.uid : null);
   ref.onDispose(repository.dispose);
   return repository;
 });
@@ -20,6 +24,13 @@ class InventoryNotifier extends Notifier<List<FoodItem>> {
     if (repository is MockFoodRepository) {
       return repository.itemsSync;
     }
+    
+    // Listen to real-time stream updates from Supabase Realtime
+    final subscription = repository.watchItems().listen((items) {
+      state = items;
+    });
+    ref.onDispose(subscription.cancel);
+
     _loadItems(repository);
     return const [];
   }
@@ -82,4 +93,10 @@ final urgentItemsProvider = Provider<List<FoodItem>>((ref) {
       .toList();
   urgent.sort((a, b) => a.expiryDate.compareTo(b.expiryDate));
   return urgent;
+});
+
+/// Provider returning recent activity logs and camera scans from food_inventory_logs
+final activityLogsProvider = FutureProvider<List<ActivityLogItem>>((ref) async {
+  final repository = ref.watch(foodRepositoryProvider);
+  return repository.getActivityLogs();
 });

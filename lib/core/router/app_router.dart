@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/data/auth_provider.dart';
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/welcome_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/expiry/presentation/screens/expiry_calendar_screen.dart';
 import '../../features/inventory/presentation/screens/food_details_screen.dart';
@@ -13,17 +15,62 @@ import '../../features/inventory/presentation/screens/inventory_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/recipes/presentation/screens/recipe_details_screen.dart';
 import '../../features/recipes/presentation/screens/recipes_screen.dart';
+import '../../features/scan/presentation/screens/fridge_camera_screen.dart';
+import '../../features/scan/presentation/screens/pending_intake_list_screen.dart';
+import '../../features/scan/presentation/screens/pending_removal_list_screen.dart';
 import '../../features/scan/presentation/screens/scan_workflow_screen.dart';
+import '../../features/scan/presentation/screens/take_out_screen.dart';
+import '../../features/settings/presentation/screens/profile_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../presentation/screens/main_shell_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
+/// Listens to auth changes and triggers GoRouter refresh
+class RouterNotifier extends ChangeNotifier {
+  RouterNotifier(Ref ref) {
+    ref.listen<AuthUserState>(
+      authProvider,
+      (previous, next) => notifyListeners(),
+    );
+  }
+}
+
+final routerNotifierProvider = Provider<RouterNotifier>((ref) {
+  return RouterNotifier(ref);
+});
+
 /// Centralized declarative routing configuration for all primary tabs and secondary workflows.
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final routerNotifier = ref.watch(routerNotifierProvider);
+
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/dashboard',
+    refreshListenable: routerNotifier,
+    initialLocation: '/welcome',
+    redirect: (context, state) {
+      final auth = ref.read(authProvider);
+      final isAuth = auth.isAuthenticated;
+      final loc = state.matchedLocation;
+
+      final isAuthRoute = loc == '/welcome' ||
+          loc == '/auth/login' ||
+          loc == '/auth/register' ||
+          loc == '/auth/forgot-password';
+
+      // 1. Unauthenticated users cannot access protected screens
+      if (!isAuth && !isAuthRoute) {
+        return '/welcome';
+      }
+
+      // 2. Authenticated users should not see auth / welcome screens
+      if (isAuth && isAuthRoute) {
+        return '/dashboard';
+      }
+
+      // No redirect needed
+      return null;
+    },
     routes: [
       // 1. Primary Bottom Navigation Stateful Shell
       StatefulShellRoute.indexedStack(
@@ -79,7 +126,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // 2. Authentication Secondary Routes
+      // 2. Authentication & Onboarding Routes
+      GoRoute(
+        path: '/welcome',
+        name: 'welcome',
+        builder: (context, state) => const WelcomeScreen(),
+      ),
       GoRoute(
         path: '/auth/login',
         name: 'login',
@@ -116,11 +168,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // 4. IN / OUT Camera Capture & Review Flow
       GoRoute(
+        path: '/pending-intakes',
+        name: 'pending-intakes',
+        builder: (context, state) => const PendingIntakeListScreen(),
+      ),
+      GoRoute(
+        path: '/pending-removals',
+        name: 'pending-removals',
+        builder: (context, state) => const PendingRemovalListScreen(),
+      ),
+      GoRoute(
         path: '/scan-workflow',
         name: 'scan-workflow',
         builder: (context, state) {
           final mode = state.uri.queryParameters['mode'] ?? 'in';
           return ScanWorkflowScreen(initialMode: mode);
+        },
+      ),
+      GoRoute(
+        path: '/fridge-camera',
+        name: 'fridge-camera',
+        builder: (context, state) {
+          final id = state.uri.queryParameters['requestId'];
+          return FridgeCameraScreen(requestId: id);
+        },
+      ),
+      GoRoute(
+        path: '/take-out',
+        name: 'take-out',
+        builder: (context, state) {
+          final id = state.uri.queryParameters['requestId'];
+          return TakeOutScreen(requestId: id);
         },
       ),
 
@@ -139,6 +217,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/notifications',
         name: 'notifications',
         builder: (context, state) => const NotificationsScreen(),
+      ),
+
+      // 7. My Profile Screen
+      GoRoute(
+        path: '/profile',
+        name: 'profile',
+        builder: (context, state) => const ProfileScreen(),
       ),
     ],
   );

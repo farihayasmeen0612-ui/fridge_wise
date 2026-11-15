@@ -41,11 +41,11 @@ class _ExpiryCalendarScreenState extends ConsumerState<ExpiryCalendarScreen> {
     // Group items by calendar day
     final Map<String, List<FoodItem>> itemsByDate = {};
     for (final item in items) {
-      final key = DateFormat('yyyy-MM-dd').format(item.expiryDate);
+      final key = DateFormat('yyyy-MM-dd').format(item.expiryDate.toLocal());
       itemsByDate.putIfAbsent(key, () => []).add(item);
     }
 
-    final selectedKey = DateFormat('yyyy-MM-dd').format(_selectedDate);
+    final selectedKey = DateFormat('yyyy-MM-dd').format(_selectedDate.toLocal());
     final selectedDayItems = itemsByDate[selectedKey] ?? [];
 
     // All upcoming items in the next 14 days sorted by urgency

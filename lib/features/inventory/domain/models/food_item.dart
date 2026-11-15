@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../utils/expiry_calculator.dart';
 import 'expiry_status.dart';
-import 'food_category.dart';
 import 'storage_location.dart';
 
 /// Core domain model representing a tracked food item in the smart fridge system.
@@ -10,7 +9,6 @@ class FoodItem {
   const FoodItem({
     required this.id,
     required this.name,
-    required this.category,
     required this.storageLocation,
     required this.purchaseDate,
     required this.expiryDate,
@@ -24,7 +22,6 @@ class FoodItem {
 
   final String id;
   final String name;
-  final FoodCategory category;
   final StorageLocation storageLocation;
   final DateTime purchaseDate;
   final DateTime expiryDate;
@@ -46,7 +43,6 @@ class FoodItem {
   FoodItem copyWith({
     String? id,
     String? name,
-    FoodCategory? category,
     StorageLocation? storageLocation,
     DateTime? purchaseDate,
     DateTime? expiryDate,
@@ -60,7 +56,6 @@ class FoodItem {
     return FoodItem(
       id: id ?? this.id,
       name: name ?? this.name,
-      category: category ?? this.category,
       storageLocation: storageLocation ?? this.storageLocation,
       purchaseDate: purchaseDate ?? this.purchaseDate,
       expiryDate: expiryDate ?? this.expiryDate,
@@ -77,7 +72,6 @@ class FoodItem {
     return {
       'id': id,
       'name': name,
-      'category': category.name,
       'storageLocation': storageLocation.name,
       'purchaseDate': purchaseDate.toIso8601String(),
       'expiryDate': expiryDate.toIso8601String(),
@@ -94,13 +88,12 @@ class FoodItem {
     return FoodItem(
       id: documentId ?? map['id'] as String? ?? '',
       name: map['name'] as String? ?? 'Unnamed Item',
-      category: FoodCategory.fromString(map['category'] as String?),
       storageLocation: StorageLocation.fromString(map['storageLocation'] as String?),
       purchaseDate: map['purchaseDate'] != null
-          ? DateTime.parse(map['purchaseDate'] as String)
+          ? DateTime.parse(map['purchaseDate'] as String).toLocal()
           : DateTime.now(),
       expiryDate: map['expiryDate'] != null
-          ? DateTime.parse(map['expiryDate'] as String)
+          ? DateTime.parse(map['expiryDate'] as String).toLocal()
           : DateTime.now().add(const Duration(days: 7)),
       quantity: (map['quantity'] as num?)?.toDouble() ?? 1.0,
       unit: map['unit'] as String? ?? 'pcs',
@@ -108,7 +101,7 @@ class FoodItem {
       notes: map['notes'] as String?,
       imageUrl: map['imageUrl'] as String?,
       createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
+          ? DateTime.parse(map['createdAt'] as String).toLocal()
           : null,
     );
   }
@@ -119,7 +112,6 @@ class FoodItem {
     return other is FoodItem &&
         other.id == id &&
         other.name == name &&
-        other.category == category &&
         other.storageLocation == storageLocation &&
         other.purchaseDate == purchaseDate &&
         other.expiryDate == expiryDate &&
@@ -135,7 +127,6 @@ class FoodItem {
     return Object.hash(
       id,
       name,
-      category,
       storageLocation,
       purchaseDate,
       expiryDate,

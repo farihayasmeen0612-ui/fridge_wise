@@ -6,7 +6,6 @@ import '../../../../core/presentation/components/app_food_row.dart';
 import '../../../../core/presentation/components/app_search_bar.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../domain/models/expiry_status.dart';
-import '../../domain/models/food_category.dart';
 import '../../domain/models/storage_location.dart';
 import '../../data/inventory_providers.dart';
 
@@ -22,7 +21,6 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
   String _searchQuery = '';
   StorageLocation? _selectedLocation; // null = All
   ExpiryStatus? _selectedStatusFilter; // null = All
-  FoodCategory? _selectedCategory; // null = All
 
   @override
   void dispose() {
@@ -45,13 +43,8 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
       if (_selectedStatusFilter != null && item.expiryStatus != _selectedStatusFilter) {
         return false;
       }
-      if (_selectedCategory != null && item.category != _selectedCategory) {
-        return false;
-      }
       if (_searchQuery.isNotEmpty) {
-        final matchesName = item.name.toLowerCase().contains(_searchQuery.toLowerCase());
-        final matchesCategory = item.category.label.toLowerCase().contains(_searchQuery.toLowerCase());
-        return matchesName || matchesCategory;
+        return item.name.toLowerCase().contains(_searchQuery.toLowerCase());
       }
       return true;
     }).toList();
@@ -74,14 +67,6 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_rounded),
-            tooltip: 'Add Food',
-            onPressed: () => context.push('/food-form'),
-          ),
-          const SizedBox(width: 4),
-        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/food-form'),
@@ -98,7 +83,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
               child: AppSearchBar(
                 controller: _searchController,
-                hintText: 'Search food by name or category...',
+                hintText: 'Search food by name...',
                 onChanged: (val) => setState(() => _searchQuery = val.trim()),
                 onClear: () => setState(() => _searchQuery = ''),
               ),
@@ -187,7 +172,6 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                               _searchQuery = '';
                               _selectedLocation = null;
                               _selectedStatusFilter = null;
-                              _selectedCategory = null;
                             });
                           },
                         )

@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:food_management/features/inventory/domain/models/expiry_status.dart';
-import 'package:food_management/features/inventory/domain/models/food_category.dart';
 import 'package:food_management/features/inventory/domain/models/food_item.dart';
 import 'package:food_management/features/inventory/domain/models/storage_location.dart';
 
@@ -11,8 +10,7 @@ void main() {
     final item = FoodItem(
       id: 'test-1',
       name: 'Organic Milk',
-      category: FoodCategory.dairy,
-      storageLocation: StorageLocation.fridge,
+      storageLocation: StorageLocation.refrigerator,
       purchaseDate: now.subtract(const Duration(days: 2)),
       expiryDate: now.add(const Duration(days: 5)),
       quantity: 1.5,
@@ -24,8 +22,7 @@ void main() {
     test('FoodItem properties and defaults', () {
       expect(item.id, 'test-1');
       expect(item.name, 'Organic Milk');
-      expect(item.category, FoodCategory.dairy);
-      expect(item.storageLocation, StorageLocation.fridge);
+      expect(item.storageLocation, StorageLocation.refrigerator);
       expect(item.quantity, 1.5);
       expect(item.unit, 'L');
       expect(item.status, ItemStatus.active);
@@ -43,7 +40,7 @@ void main() {
       expect(updated.name, item.name);
       expect(updated.quantity, 0.75);
       expect(updated.notes, 'Half bottle remaining');
-      expect(updated.category, item.category);
+      expect(updated.storageLocation, item.storageLocation);
     });
 
     test('FoodItem serialization toMap and fromMap roundtrip', () {
@@ -52,7 +49,6 @@ void main() {
 
       expect(restored.id, item.id);
       expect(restored.name, item.name);
-      expect(restored.category, item.category);
       expect(restored.storageLocation, item.storageLocation);
       expect(restored.quantity, item.quantity);
       expect(restored.unit, item.unit);
@@ -67,6 +63,19 @@ void main() {
 
       final differentItem = item.copyWith(id: 'different-id');
       expect(item, isNot(equals(differentItem)));
+    });
+
+    test('StorageLocation fromString supports Refrigerator, Freezer, Deep Fridge, and legacy Fridge', () {
+      expect(StorageLocation.fromString('Refrigerator'), StorageLocation.refrigerator);
+      expect(StorageLocation.fromString('refrigerator'), StorageLocation.refrigerator);
+      expect(StorageLocation.fromString('Fridge'), StorageLocation.refrigerator);
+      expect(StorageLocation.fromString('fridge'), StorageLocation.refrigerator);
+      expect(StorageLocation.fromString('Freezer'), StorageLocation.freezer);
+      expect(StorageLocation.fromString('freezer'), StorageLocation.freezer);
+      expect(StorageLocation.fromString('Deep Fridge'), StorageLocation.deepFridge);
+      expect(StorageLocation.fromString('deep_fridge'), StorageLocation.deepFridge);
+      expect(StorageLocation.fromString('deepfridge'), StorageLocation.deepFridge);
+      expect(StorageLocation.fromString(null), StorageLocation.refrigerator);
     });
   });
 }

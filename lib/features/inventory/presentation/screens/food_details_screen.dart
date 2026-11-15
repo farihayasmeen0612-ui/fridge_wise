@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/presentation/components/app_button.dart';
 import '../../../../core/presentation/components/app_confirm_dialog.dart';
+import '../../../../core/presentation/components/app_image_zoom_dialog.dart';
 import '../../../../core/presentation/components/app_status_pill.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/inventory_providers.dart';
@@ -19,6 +20,18 @@ class FoodDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _FoodDetailsScreenState extends ConsumerState<FoodDetailsScreen> {
+  late String _currentItemId;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentItemId = widget.itemId;
+  }
+
+  void _openImageZoom(BuildContext context, String imageUrl, String title) {
+    AppImageZoomDialog.show(context, imageUrl: imageUrl, title: title);
+  }
+
   void _openConsumptionSheet(FoodItem item) {
     double deductQty = 1.0;
     if (item.quantity <= 1.0) {
@@ -198,9 +211,19 @@ class _FoodDetailsScreenState extends ConsumerState<FoodDetailsScreen> {
     final items = ref.watch(inventoryNotifierProvider);
 
     final item = items.cast<FoodItem?>().firstWhere(
-          (i) => i?.id == widget.itemId,
-          orElse: () => null,
+          (i) => i?.id == _currentItemId || i?.id == widget.itemId,
+          orElse: () => items.cast<FoodItem?>().firstWhere(
+            (i) =>
+                i != null &&
+                (widget.itemId.contains(i.name.toLowerCase().replaceAll(RegExp(r'\s+'), '_')) ||
+                    (i.id.startsWith('sp_') && widget.itemId.startsWith('sp_'))),
+            orElse: () => null,
+          ),
         );
+
+    if (item != null && item.id != _currentItemId) {
+      _currentItemId = item.id;
+    }
 
     if (item == null) {
       return Scaffold(
@@ -210,6 +233,7 @@ class _FoodDetailsScreenState extends ConsumerState<FoodDetailsScreen> {
     }
 
     final dateFormat = DateFormat('EEEE, MMM d, yyyy');
+    final hasPhoto = item.imageUrl != null && item.imageUrl!.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -218,7 +242,9 @@ class _FoodDetailsScreenState extends ConsumerState<FoodDetailsScreen> {
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: 'Edit Item',
-            onPressed: () => context.push('/food-form?id=${item.id}'),
+            onPressed: () async {
+              await context.push('/food-form?id=${item.id}');
+            },
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded),
@@ -245,18 +271,36 @@ class _FoodDetailsScreenState extends ConsumerState<FoodDetailsScreen> {
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: colors.surfaceElevated,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: colors.cardBorder),
-                      ),
-                      child: Icon(
-                        item.category.icon,
-                        size: 28,
-                        color: colorScheme.primary,
+                    GestureDetector(
+                      onTap: hasPhoto ? () => _openImageZoom(context, item.imageUrl!, item.name) : null,
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: colors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: colors.cardBorder),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: hasPhoto
+                            ? Image.network(
+                                item.imageUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Center(
+                                  child: Icon(
+                                    item.storageLocation.icon,
+                                    size: 28,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                              )
+                            : Center(
+                                child: Icon(
+                                  item.storageLocation.icon,
+                                  size: 28,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -322,7 +366,7 @@ class _FoodDetailsScreenState extends ConsumerState<FoodDetailsScreen> {
                     _DetailRow(
                       icon: Icons.calendar_today_outlined,
                       label: 'Expiration Date',
-                      value: dateFormat.format(item.expiryDate),
+                      value: dateFormat.format(item.expiryDate.toLocal()),
                       highlightColor: item.isExpired
                           ? colors.dangerRed
                           : item.isExpiringSoon
@@ -334,7 +378,7 @@ class _FoodDetailsScreenState extends ConsumerState<FoodDetailsScreen> {
                     _DetailRow(
                       icon: Icons.history_rounded,
                       label: 'Date Added',
-                      value: dateFormat.format(item.purchaseDate),
+                      value: dateFormat.format(item.purchaseDate.toLocal()),
                     ),
                     Divider(height: 20, color: colors.cardBorder),
 
@@ -342,13 +386,6 @@ class _FoodDetailsScreenState extends ConsumerState<FoodDetailsScreen> {
                       icon: Icons.kitchen_rounded,
                       label: 'Storage Compartment',
                       value: item.storageLocation.label,
-                    ),
-                    Divider(height: 20, color: colors.cardBorder),
-
-                    _DetailRow(
-                      icon: Icons.category_outlined,
-                      label: 'Category',
-                      value: item.category.label,
                     ),
 
                     if (item.notes != null && item.notes!.isNotEmpty) ...[

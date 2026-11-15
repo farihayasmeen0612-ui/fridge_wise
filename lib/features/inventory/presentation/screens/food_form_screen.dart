@@ -7,7 +7,7 @@ import '../../../../core/presentation/components/app_confirm_dialog.dart';
 import '../../../../core/presentation/components/app_text_field.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/inventory_providers.dart';
-import '../../domain/models/food_category.dart';
+import '../../domain/models/expiry_status.dart';
 import '../../domain/models/food_item.dart';
 import '../../domain/models/storage_location.dart';
 
@@ -27,8 +27,7 @@ class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
   late TextEditingController _notesController;
 
   String _unit = 'pcs';
-  FoodCategory _category = FoodCategory.produce;
-  StorageLocation _location = StorageLocation.fridge;
+  StorageLocation _location = StorageLocation.refrigerator;
   DateTime _purchaseDate = DateTime.now();
   DateTime? _expiryDate; // User must explicitly choose or confirm expiry date
   bool _isDirty = false;
@@ -56,7 +55,6 @@ class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
                 : existing.quantity)
             .toString();
         _unit = existing.unit;
-        _category = existing.category;
         _location = existing.storageLocation;
         _purchaseDate = existing.purchaseDate;
         _expiryDate = existing.expiryDate;
@@ -113,13 +111,19 @@ class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
 
     setState(() => _isLoading = true);
 
+    final existing = widget.itemId != null
+        ? ref.read(inventoryNotifierProvider).cast<FoodItem?>().firstWhere(
+              (i) => i?.id == widget.itemId,
+              orElse: () => null,
+            )
+        : null;
+
     final quantity = double.tryParse(_quantityController.text.trim()) ?? 1.0;
     final id = widget.itemId ?? 'item-${DateTime.now().microsecondsSinceEpoch}';
 
     final foodItem = FoodItem(
       id: id,
       name: _nameController.text.trim(),
-      category: _category,
       storageLocation: _location,
       purchaseDate: _purchaseDate,
       expiryDate: _expiryDate!,
@@ -128,6 +132,8 @@ class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
       notes: _notesController.text.trim().isNotEmpty
           ? _notesController.text.trim()
           : null,
+      imageUrl: existing?.imageUrl,
+      status: existing?.status ?? ItemStatus.active,
     );
 
     if (widget.itemId != null) {
@@ -323,7 +329,7 @@ class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
                           Expanded(
                             child: Text(
                               _expiryDate != null
-                                  ? dateFormat.format(_expiryDate!)
+                                  ? dateFormat.format(_expiryDate!.toLocal())
                                   : 'Tap to explicitly set expiry date',
                               style: TextStyle(
                                 fontSize: 15,
@@ -373,7 +379,7 @@ class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
                           Icon(Icons.calendar_today_outlined, size: 18, color: colors.textSecondary),
                           const SizedBox(width: 12),
                           Text(
-                            dateFormat.format(_purchaseDate),
+                            dateFormat.format(_purchaseDate.toLocal()),
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -448,44 +454,6 @@ class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
                             ),
                           ),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Category Selector
-                  Text(
-                    'Category',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: FoodCategory.values.map((cat) {
-                      final isSelected = _category == cat;
-                      return ChoiceChip(
-                        label: Text(cat.label),
-                        avatar: Icon(
-                          cat.icon,
-                          size: 16,
-                          color: isSelected
-                              ? colorScheme.onPrimary
-                              : colorScheme.onSurface,
-                        ),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setState(() {
-                              _category = cat;
-                              _isDirty = true;
-                            });
-                          }
-                        },
                       );
                     }).toList(),
                   ),
