@@ -17,18 +17,13 @@ def get_b64(filename):
 
 print("Encoding screenshots...")
 b64_icon = get_b64("01_app_icon.png")
-b64_welcome = get_b64("01_welcome_screen.png")
-b64_login = get_b64("02_login_screen.png")
-b64_register = get_b64("03_register_screen.png")
-b64_dashboard = get_b64("04_dashboard_screen.png")
-b64_inventory = get_b64("05_inventory_screen.png")
-b64_details = get_b64("06_food_details_screen.png")
-b64_calendar = get_b64("07_calendar_screen.png")
-b64_intake = get_b64("08_food_intake_screen.png")
-b64_takeout = get_b64("09_take_out_screen.png")
-b64_notifs = get_b64("10_notifications_screen.png")
-b64_profile = get_b64("11_profile_screen.png")
-b64_settings = get_b64("12_settings_screen.png")
+b64_welcome = get_b64("02_welcome_illustration.png")
+b64_register = get_b64("03_login_auth_screen.jpg")
+b64_intake_out = get_b64("05_food_intake_in_screen.jpg")
+b64_inventory_empty = get_b64("07_fridge_inventory_screen.jpg")
+b64_inventory_items = get_b64("09_food_details_screen.png")
+b64_details = get_b64("10_food_item_actions.jpg")
+b64_profile = get_b64("11_user_profile_screen.jpg")
 b64_hardware = get_b64("12_hardware_camera_capture.jpg")
 
 html_content = f"""<!DOCTYPE html>
@@ -264,9 +259,9 @@ html_content = f"""<!DOCTYPE html>
         <div class="sub">High-res multi-density icon with sparkle badge</div>
       </div>
       <div class="screen-item">
-        <img src="{b64_welcome}" alt="Welcome Screen">
-        <div class="caption">Welcome / Onboarding Screen</div>
-        <div class="sub">Botanical kitchen illustration & theme toggle</div>
+        <img src="{b64_welcome}" alt="Welcome Illustration" style="max-height: 280px; object-fit: contain;">
+        <div class="caption">Welcome Illustration</div>
+        <div class="sub">Smart fridge cartoon asset for onboarding</div>
       </div>
     </div>
   </div>
@@ -276,15 +271,10 @@ html_content = f"""<!DOCTYPE html>
     <h2>3. Authentication & User Data Isolation</h2>
     <p>Secure Supabase GoTrue authentication providing scoped data isolation per user.</p>
     <div class="screen-grid">
-      <div class="screen-item">
-        <img src="{b64_login}" alt="Login Screen">
-        <div class="caption">Sign In Screen</div>
-        <div class="sub">Forest green aesthetic & form validation</div>
-      </div>
-      <div class="screen-item">
+      <div class="screen-item" style="grid-column: 1 / -1; max-width: 440px; margin: 0 auto;">
         <img src="{b64_register}" alt="Register Screen">
         <div class="caption">Create Account Screen</div>
-        <div class="sub">Isolated inventory provisioning per UID</div>
+        <div class="sub">FridgeWise botanical branding, forest green aesthetic & form validation</div>
       </div>
     </div>
     <ul class="features">
@@ -293,78 +283,43 @@ html_content = f"""<!DOCTYPE html>
     </ul>
   </div>
 
-  <!-- SLIDE 4: DASHBOARD -->
+  <!-- SLIDE 4: FOOD INTAKE & REMOVAL -->
   <div class="card">
-    <h2>4. Executive Dashboard & Real-Time KPIs</h2>
-    <p>Centralized control center offering high-level visibility over inventory health and urgent action items.</p>
-    <div class="screen-grid">
-      <div class="screen-item" style="grid-column: 1 / -1; max-width: 440px; margin: 0 auto;">
-        <img src="{b64_dashboard}" alt="Dashboard Screen">
-        <div class="caption">Live Executive Dashboard</div>
-        <div class="sub">Dynamic time-based greeting, KPI metric bar, urgent attention carousel</div>
-      </div>
-    </div>
-    <ul class="features">
-      <li><strong>Live Metrics</strong>: Instant breakdown of Total Items, Fresh Items (> 3 days), Expiring Soon, and Expired items.</li>
-      <li><strong>Pending Capture Alerts</strong>: Persistent alert card notifying the user when raw hardware captures await verification.</li>
-      <li><strong>Zero-Waste Recipe Integration</strong>: Suggests dynamic chef-crafted recipes based on ingredients currently in the fridge.</li>
-    </ul>
-  </div>
-
-  <!-- SLIDE 5: FOOD INTAKE -->
-  <div class="card">
-    <h2>5. Food Intake (IN) — Human-in-the-Loop AI Review</h2>
-    <p>Automated intake triggered when the smart fridge door closes, verified with one tap by the user.</p>
+    <h2>4. Food Intake / Removal — Human-in-the-Loop Verification</h2>
+    <p>Automated capture triggered by ESP32 hardware sensors, verified with one tap by the user.</p>
     <div class="screen-grid">
       <div class="screen-item">
-        <img src="{b64_intake}" alt="Food Intake Screen">
-        <div class="caption">Mobile Intake Review Screen</div>
-        <div class="sub">Streamlined layout, AI name pre-fill, compartment selector</div>
+        <img src="{b64_intake_out}" alt="Food Verification Screen">
+        <div class="caption">Mobile Verification Screen</div>
+        <div class="sub">Visual photo from ESP32, inventory checklist, confirm/dismiss</div>
       </div>
       <div class="screen-item">
         <img src="{b64_hardware}" alt="ESP32 Hardware Photo">
         <div class="caption">Raw ESP32-S3 Camera Capture</div>
-        <div class="sub">Captured on door close and uploaded to cloud CDN</div>
+        <div class="sub">Captured on door close (IN) or button press (OUT) and uploaded to cloud CDN</div>
       </div>
     </div>
     <ul class="features">
-      <li><strong>Asynchronous AI Verification</strong>: Gemini 1.5 Flash Vision classifies the food item, but the user has final confirmation authority.</li>
+      <li><strong>Asynchronous AI Verification (IN)</strong>: Gemini 1.5 Flash Vision classifies the food item, but the user has final confirmation authority.</li>
+      <li><strong>Visual Checklist (OUT)</strong>: User selects which items were physically removed against their tracked inventory.</li>
       <li><strong>Interactive Pinch-to-Zoom</strong>: Tap any photo thumbnail to inspect details in a full-screen viewer.</li>
-      <li><strong>Streamlined Actions</strong>: Redundant trash icons removed; single "Confirm Intake" and "Dismiss Request" buttons.</li>
     </ul>
   </div>
 
-  <!-- SLIDE 6: FOOD REMOVAL -->
+  <!-- SLIDE 5: INVENTORY -->
   <div class="card">
-    <h2>6. Food Removal (OUT) — Visual Checklist & Deduction</h2>
-    <p>Triggered when a user presses the physical OUT button on the fridge exterior.</p>
-    <div class="screen-grid">
-      <div class="screen-item" style="grid-column: 1 / -1; max-width: 440px; margin: 0 auto;">
-        <img src="{b64_takeout}" alt="Take Out Screen">
-        <div class="caption">Food Removal (OUT) Screen</div>
-        <div class="sub">Physical extraction photo, item search, quantity selection</div>
-      </div>
-    </div>
-    <ul class="features">
-      <li><strong>Zero AI Hallucinations for Extraction</strong>: Removal relies on visual confirmation by the user against their active inventory list.</li>
-      <li><strong>Ledger Balance Deduction</strong>: Deductions decrement active stock in the append-only event ledger.</li>
-    </ul>
-  </div>
-
-  <!-- SLIDE 7: INVENTORY & CALENDAR -->
-  <div class="card">
-    <h2>7. "My Fridge" Inventory & Expiry Calendar</h2>
+    <h2>5. "My Fridge" Inventory & Multi-Compartment Tracking</h2>
     <p>Multi-compartment organization and dynamic freshness monitoring.</p>
     <div class="screen-grid">
       <div class="screen-item">
-        <img src="{b64_inventory}" alt="Inventory Screen">
-        <div class="caption">Inventory Screen</div>
-        <div class="sub">Refrigerator, Freezer, and Deep Fridge tabs</div>
+        <img src="{b64_inventory_empty}" alt="Empty Inventory">
+        <div class="caption">Inventory Screen (Empty State)</div>
+        <div class="sub">All Zones, Fridge, Freezer tabs with status filters</div>
       </div>
       <div class="screen-item">
-        <img src="{b64_calendar}" alt="Expiry Calendar">
-        <div class="caption">Expiry Calendar Screen</div>
-        <div class="sub">Monthly timeline grid with color-coded alerts</div>
+        <img src="{b64_inventory_items}" alt="Inventory with Items">
+        <div class="caption">Inventory with Items</div>
+        <div class="sub">Color-coded freshness badges and ESP32 thumbnails</div>
       </div>
     </div>
     <ul class="features">
@@ -373,32 +328,39 @@ html_content = f"""<!DOCTYPE html>
     </ul>
   </div>
 
-  <!-- SLIDE 8: FOOD DETAILS & NOTIFICATIONS -->
+  <!-- SLIDE 6: FOOD DETAILS -->
   <div class="card">
-    <h2>8. Item Details, Notifications & Settings</h2>
-    <p>Granular portion consumption, hardware event notifications, and user configuration.</p>
+    <h2>6. Food Item Details & Consumption Logging</h2>
+    <p>Granular portion consumption and spoilage audit tracking.</p>
     <div class="screen-grid">
-      <div class="screen-item">
+      <div class="screen-item" style="grid-column: 1 / -1; max-width: 440px; margin: 0 auto;">
         <img src="{b64_details}" alt="Food Details Screen">
         <div class="caption">Food Item Details</div>
-        <div class="sub">Consume portion or discard spoiled</div>
-      </div>
-      <div class="screen-item">
-        <img src="{b64_notifs}" alt="Notifications Screen">
-        <div class="caption">Notification Center</div>
-        <div class="sub">Hardware capture & expiry alerts</div>
-      </div>
-      <div class="screen-item">
-        <img src="{b64_profile}" alt="Profile Screen">
-        <div class="caption">User Profile Screen</div>
-        <div class="sub">Clean UI with database UID hidden</div>
-      </div>
-      <div class="screen-item">
-        <img src="{b64_settings}" alt="Settings Screen">
-        <div class="caption">Application Settings</div>
-        <div class="sub">Custom alert thresholds & sync options</div>
+        <div class="sub">Photo zoom, storage info, expiry date, and consumption logging</div>
       </div>
     </div>
+    <ul class="features">
+      <li><strong>Partial Consumption</strong>: Log specific portions used (e.g. 1 of 4 bananas) with the stepper UI.</li>
+      <li><strong>Discard Spoiled</strong>: Track food waste for zero-waste audit analytics.</li>
+    </ul>
+  </div>
+
+  <!-- SLIDE 7: PROFILE -->
+  <div class="card">
+    <h2>7. User Profile & Cloud Photo Sync</h2>
+    <p>Personalized account management with device camera and cloud storage integration.</p>
+    <div class="screen-grid">
+      <div class="screen-item" style="grid-column: 1 / -1; max-width: 440px; margin: 0 auto;">
+        <img src="{b64_profile}" alt="Profile Screen">
+        <div class="caption">User Profile Screen</div>
+        <div class="sub">Name, email, phone, profile photo picker, and security options</div>
+      </div>
+    </div>
+    <ul class="features">
+      <li><strong>Gallery & Camera Photo Picker</strong>: Upload profile photos directly via device camera or gallery.</li>
+      <li><strong>Cloud Sync</strong>: Profile images compressed and stored in Supabase Storage CDN.</li>
+      <li><strong>Clean Consumer UI</strong>: Database UUIDs hidden in the latest version for professional aesthetics.</li>
+    </ul>
   </div>
 
   <!-- SLIDE 9: TECH STACK -->

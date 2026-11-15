@@ -78,9 +78,9 @@ Below are the actual screens of the FridgeWise application, their functionality,
 
 ### Screen 1: App Identity & Welcome Screen
 
-| App Launcher Icon | Welcome / Onboarding Screen |
+| App Launcher Icon | Welcome Illustration |
 | :---: | :---: |
-| ![FridgeWise App Icon](./screenshots/01_app_icon.png) | ![Welcome Screen](./screenshots/01_welcome_screen.png) |
+| ![FridgeWise App Icon](./screenshots/01_app_icon.png) | ![Welcome Illustration](./screenshots/02_welcome_illustration.png) |
 
 #### Features & Technical Details:
 * **Custom App Icon**: Features the official FridgeWise blue smart refrigerator branding with sparkle accents, applied across all Android screen densities (`mipmap-mdpi` through `mipmap-xxxhdpi`).
@@ -92,9 +92,9 @@ Below are the actual screens of the FridgeWise application, their functionality,
 
 ### Screen 2: Authentication & Multi-Tenant User Management
 
-| Sign In Screen | Create Account (Register) Screen |
-| :---: | :---: |
-| ![Login Screen](./screenshots/02_login_screen.png) | ![Register Screen](./screenshots/03_register_screen.png) |
+| Create Account (Register) Screen |
+| :---: |
+| ![Register Screen](./screenshots/03_login_auth_screen.jpg) |
 
 #### Features & Technical Details:
 * **Supabase GoTrue Authentication**: Full email and password sign-in and sign-up with cryptographic session tokens.
@@ -104,32 +104,11 @@ Below are the actual screens of the FridgeWise application, their functionality,
 
 ---
 
-### Screen 3: Executive Dashboard & Control Center
+### Screen 3: Food Intake (IN) — Human-in-the-Loop AI Review
 
-| Complete Executive Dashboard Overview |
-| :---: |
-| ![Dashboard Screen](./screenshots/04_dashboard_screen.png) |
-
-#### Features & Technical Details:
-* **Dynamic Time-Based Greeting**: Greets the user based on local time (`Good morning, Fariha!`, `Good afternoon`, `Good evening`).
-* **Notification Center**: Bell icon with real-time unread badge tracking pending hardware captures.
-* **KPI Metric Cards**: Real-time visual overview of active fridge inventory:
-  * **Total Items**: Total food items currently in stock.
-  * **Fresh Items**: Food with shelf life $> 3$ days (Green indicator).
-  * **Expiring Soon**: Food expiring within 3 days (Orange warning).
-  * **Expired Items**: Food past expiration date (Red critical alert).
-* **Hardware Captures Awaiting Confirmation**: Interactive notification card linking directly to pending intake or extraction captures.
-* **Urgent Attention Section**: Quick horizontal carousel highlighting items that need immediate consumption before spoiling.
-* **Recipe of the Day Card**: Highlights a dynamic recipe that can be cooked using ingredients currently inside the fridge.
-* **Quick Sign Out Action**: Dedicated, confirmation-guarded sign-out action in the top-right header with custom vector iconography.
-
----
-
-### Screen 4: Food Intake (IN) — Human-in-the-Loop AI Review
-
-| Food Intake Verification Screen | Raw ESP32 Hardware Capture |
+| Food Intake / Removal Verification Screen | Raw ESP32 Hardware Capture |
 | :---: | :---: |
-| ![Food Intake Review](./screenshots/08_food_intake_screen.png) | ![Hardware Camera Capture](./screenshots/12_hardware_camera_capture.jpg) |
+| ![Food Removal Review](./screenshots/05_food_intake_in_screen.jpg) | ![Hardware Camera Capture](./screenshots/12_hardware_camera_capture.jpg) |
 
 #### How This Connects to the Hardware:
 1. When the fridge door closes, the magnetic sensor signals the ESP32 to take a photo.
@@ -138,94 +117,69 @@ Below are the actual screens of the FridgeWise application, their functionality,
 4. When opened, the user sees the **exact camera photo taken by the ESP32**.
 
 #### Features on This Screen:
-* **Clean Header Interface**: Uncluttered top navigation bar with redundant icons eliminated for streamlined verification.
 * **Interactive Full-Screen Photo Viewer**: Tapping the photo thumbnail opens a full-screen pinch-to-zoom interactive viewer dialog (`AppImageZoomDialog`) so the user can inspect grocery details clearly.
-* **AI-Suggested Food Name**: Automatically pre-fills the food item name (e.g. `Fresh Bread`) detected by Gemini Vision, editable by the user if needed.
+* **AI-Suggested Food Name**: Automatically pre-fills the food item name (e.g. `Bread`) detected by Gemini Vision, editable by the user if needed.
 * **Quantity & Unit Selector**: Adjustable quantity (e.g. `1.0`) and unit dropdown (`pcs`, `kg`, `g`, `L`, `packs`).
 * **Compartment Selector**: One-tap pills to specify where the food was placed: **Refrigerator**, **Freezer**, or **Deep Fridge**.
 * **Estimated Expiration Date**: Automatically calculated shelf-life based on food category, with a one-tap calendar date picker to customize.
-* **Confirm Intake Button**: Converts the pending hardware capture into a confirmed inventory log (`app_in_...jpg`), adding it to active inventory.
+* **Confirm Intake / Confirm Removal Button**: Converts the pending hardware capture into a confirmed inventory log, adding or deducting from active inventory.
 * **Dismiss This Request Button**: Prominent secondary button at the bottom to discard non-food or accidental captures.
 
 ---
 
-### Screen 5: Food Removal (OUT) — Visual Verification & Deduction
+### Screen 4: "My Fridge" Inventory & Compartment Management
 
-| Food Removal Screen |
-| :---: |
-| ![Food Removal OUT Screen](./screenshots/09_take_out_screen.png) |
-
-#### How This Connects to the Hardware:
-1. When a user removes food from the physical fridge, they press the external tactile button.
-2. The ESP32 captures a picture of the extraction event (`output_*.jpg`).
-3. The app opens the **Food Removal (OUT)** verification screen.
-
-#### Features on This Screen:
-* **Cleaned Header Interface**: Redundant trash icons removed, keeping focus entirely on verification.
-* **Visual Verification Photo**: Displays the extraction photo taken by the ESP32 with pinch-to-zoom support.
-* **Fridge Inventory Search**: Search bar to filter currently available items in the fridge.
-* **Current Inventory Checklist**: Displays in-stock items with checkboxes, quantities, compartments, and days remaining badges.
-* **Confirm Removal Button**: Deducts the selected items from the fridge ledger (`app_out_...jpg`).
-* **Dismiss This Request**: Discards the event without modifying inventory.
-
----
-
-### Screen 6: "My Fridge" Inventory & Multi-Compartment Tracking
-
-| All Inventory View | Expiry Calendar View |
+| Inventory Screen (Empty State) | Inventory with Items |
 | :---: | :---: |
-| ![Inventory Screen](./screenshots/05_inventory_screen.png) | ![Expiry Calendar Screen](./screenshots/07_calendar_screen.png) |
+| ![Empty Inventory](./screenshots/07_fridge_inventory_screen.jpg) | ![Inventory with Banana](./screenshots/09_food_details_screen.png) |
 
 #### Features & Technical Details:
 * **Multi-Compartment Tab Filter**: Clean pill selectors allowing users to view items by location:
-  * **All Items**
-  * **Refrigerator**
+  * **All Zones**
+  * **Fridge**
   * **Freezer**
-  * **Deep Fridge**
+* **Status Filters**: Quick filter by **All Status**, **Expiring Soon**, **Expired**, or **Fresh**.
 * **Real-Time Live Search**: Instantly filters items by name or category.
 * **True ESP32 Thumbnail Display**: Displays the actual picture captured by the fridge hardware beside each food name.
 * **Color-Coded Freshness Badges**:
   * `Expires today` (Orange alert)
   * `7 days left` (Green fresh badge)
   * `Expired` (Red warning)
-* **Interactive Calendar View**: Comprehensive monthly grid highlighting exact expiry distribution to prevent grocery loss.
 
 ---
 
-### Screen 7: Food Item Details & Quick Consumption
+### Screen 5: Food Item Details & Quick Consumption
 
-| Food Item Details Screen |
-| :---: |
-| ![Food Details](./screenshots/06_food_details_screen.png) |
+| Food Item Details | Log Consumption Actions |
+| :---: | :---: |
+| ![Food Details](./screenshots/10_food_item_actions.jpg) | ![ESP32 Camera Photo](./screenshots/12_hardware_camera_capture.jpg) |
 
 #### Features & Technical Details:
 * **Full Item Specifications**: Displays item category, storage location, purchase date, expiration date, and remaining balance.
 * **Interactive Zoom**: Tapping the food photo thumbnail opens the pinch-to-zoom photo viewer dialog.
-* **Partial Consumption (`Mark Consumed`)**: Allows decrementing partial portions (e.g., using 1 piece out of 4 bananas).
+* **Partial Consumption (`Log Food Consumption`)**: Allows decrementing partial portions (e.g., using 1 piece out of 4 bananas).
 * **Discard Spoiled (`Mark Discarded`)**: Removes the item completely and logs a spoilage event for zero-waste audit analytics.
 * **Edit Item**: Allows renaming, shifting compartments, or updating expiration dates.
 
 ---
 
-### Screen 8: User Profile & Device Cloud Photo Sync
+### Screen 6: User Profile & Device Cloud Photo Sync
 
-| User Profile (UID Hidden) | Application Settings |
-| :---: | :---: |
-| ![User Profile Screen](./screenshots/11_profile_screen.png) | ![Settings Screen](./screenshots/12_settings_screen.png) |
+| User Profile Screen |
+| :---: |
+| ![User Profile Screen](./screenshots/11_user_profile_screen.jpg) |
 
 #### Features & Technical Details:
 * **Personalized Account View**: Displays user's name, email address, phone number, and account security options.
-* **Cleaned Consumer UI**: Low-level database UUIDs are securely hidden from regular users for a clean, professional aesthetic.
-* **Native Gallery & Camera Photo Picker**: Tapping the camera icon opens a bottom sheet to upload profile photos directly to Supabase Storage.
-* **Settings & Alert Customization**: Configurable alert thresholds (e.g. notify 1, 2, or 3 days before expiry) and daily digest toggle.
+* **Native Gallery & Camera Photo Picker**: Tapping the camera icon opens a bottom sheet with:
+  * **Choose from Gallery**: Directly opens device photos using `image_picker`.
+  * **Remove Photo**: Resets to default initials avatar.
+* **Cloud Storage Sync**: Profile pictures are automatically compressed, uploaded to the Supabase `Photos` bucket, and synced across all user devices.
+* **Cleaned Consumer UI**: Technical database identifiers (`UID`) are hidden from regular users in the latest build for a clean consumer experience.
 
 ---
 
-### Screen 9: Real-Time Notifications Center
-
-| Notification Center |
-| :---: |
-| ![Notifications Screen](./screenshots/10_notifications_screen.png) |
+> **Note for Presentation**: The screenshots above are captured directly from a real Android device running the latest FridgeWise APK. For the final presentation, take fresh screenshots from your phone showing all screens after the latest code updates (trash icon removed, UID hidden, etc.).
 
 #### Features & Technical Details:
 * **Hardware Event Alerts**: Automatically notified whenever the ESP32 camera records an intake or removal event.
